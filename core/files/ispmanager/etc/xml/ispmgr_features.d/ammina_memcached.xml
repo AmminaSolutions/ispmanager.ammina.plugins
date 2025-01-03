@@ -1,0 +1,9 @@
+<features>
+    <feature name="memcached">
+        <package name="memcached" dispname="Memcached server" recommended="no" primary="yes">
+            <systemname>memcached</systemname>
+            <addfeature name="memcached"/>
+            <role name="memcached_server" addfeature="yes"/>
+        </package>
+    </feature>
+</features>

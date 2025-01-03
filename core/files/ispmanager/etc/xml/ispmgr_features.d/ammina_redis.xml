@@ -1,0 +1,9 @@
+<features>
+    <feature name="redis">
+        <package name="redis" dispname="Redis server" recommended="yes" primary="yes">
+            <systemname>redis</systemname>
+            <addfeature name="redis"/>
+            <role name="redis_server" addfeature="yes"/>
+        </package>
+    </feature>
+</features>

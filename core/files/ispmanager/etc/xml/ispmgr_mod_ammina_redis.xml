@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mgrdata>
+    <mainmenu level="admin+">
+        <modernmenu>
+            <node name="ammina">
+                <node name="ammina_redis"/>
+            </node>
+        </modernmenu>
+    </mainmenu>
+    <handler name="ammina_redis.sh" type="xml">
+        <func name="ammina_redis"/>
+    </handler>
+    <metadata name="ammina_redis" type="form">
+        <form>
+            <field name="ammina_memorylimit">
+                <input type="text" name="ammina_memorylimit" check="int" checkargs="1,999999999"/>
+            </field>
+            <field name="ammina_databases">
+                <input type="text" name="ammina_databases" check="int" checkargs="1,999999999"/>
+            </field>
+            <field name="ammina_issocket">
+                <input type="checkbox" name="ammina_issocket">
+                    <if value="on" hide="ammina_note2"/>
+                    <else hide="ammina_note"/>
+                </input>
+            </field>
+            <field name="ammina_note" noname="yes" fullwith="yes">
+                <textdata type="msg" name="ammina_note"/>
+            </field>
+            <field name="ammina_note2" noname="yes" fullwith="yes">
+                <textdata type="msg" name="ammina_note2"/>
+            </field>
+        </form>
+    </metadata>
+    <lang name="ru">
+        <messages name="feature">
+            <msg name="dname_redis">Redis - нереляционная высокопроизводительная СУБД</msg>
+        </messages>
+        <messages name="feature.edit">
+            <msg name="package_redis">Redis - нереляционная высокопроизводительная СУБД</msg>
+            <msg name="hint_package_redis">Установить сервер Redis</msg>
+        </messages>
+        <messages name="desktop">
+            <msg name="modernmenu_ammina_redis">Настройки Redis</msg>
+            <msg name="modernmenu_ammina">AmminaISP</msg>
+        </messages>
+        <messages name="ammina_redis">
+            <msg name="title">Настройка Redis</msg>
+            <msg name="ammina_memorylimit">Размер доступной памяти, Мб</msg>
+            <msg name="hint_ammina_memorylimit">Размер доступной памяти, Мб. Не должно превышать размер свободной памяти</msg>
+            <msg name="ammina_databases">Количество баз данных</msg>
+            <msg name="hint_ammina_databases">Доступное количество баз данных</msg>
+            <msg name="ammina_issocket">Создавать подключение через сокет</msg>
+            <msg name="hint_ammina_issocket">Создавать подключение через сокет</msg>
+            <msg name="ammina_note">Для подключения при помощи сокета используйте значение /var/run/redis/redis.sock</msg>
+            <msg name="ammina_note2">Для подключения по TCP протоколу: хост = localhost, порт = 6379</msg>
+        </messages>
+    </lang>
+</mgrdata>

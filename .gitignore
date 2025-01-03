@@ -1,0 +1,5 @@
+.idea
+/.mgr_etc
+/.mgr_addon
+/.local/*
+!/.local/.gitkeep
