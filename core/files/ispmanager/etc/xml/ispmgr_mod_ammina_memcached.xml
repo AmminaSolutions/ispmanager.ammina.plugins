@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mgrdata>
+    <mainmenu level="admin+">
+        <modernmenu>
+            <node name="ammina">
+                <node name="ammina_memcached"/>
+            </node>
+        </modernmenu>
+    </mainmenu>
+    <handler name="ammina_memcached.sh" type="xml">
+        <func name="ammina_memcached"/>
+    </handler>
+    <metadata name="ammina_memcached" type="form">
+        <form>
+            <field name="ammina_cachesize">
+                <input type="text" name="ammina_cachesize" check="int" checkargs="1,999999999"/>
+            </field>
+            <field name="ammina_maxconn">
+                <input type="text" name="ammina_maxconn" check="int" checkargs="1,999999999"/>
+            </field>
+            <field name="ammina_issocket">
+                <input type="checkbox" name="ammina_issocket">
+                    <if value="on" hide="ammina_note2"/>
+                    <else hide="ammina_note"/>
+                </input>
+            </field>
+            <field name="ammina_note" noname="yes" fullwith="yes">
+                <textdata type="msg" name="ammina_note"/>
+            </field>
+            <field name="ammina_note2" noname="yes" fullwith="yes">
+                <textdata type="msg" name="ammina_note2"/>
+            </field>
+        </form>
+    </metadata>
+    <lang name="ru">
+        <messages name="feature">
+            <msg name="dname_memcached">Memcached - сервис кеширования данных в памяти</msg>
+        </messages>
+        <messages name="feature.edit">
+            <msg name="package_memcached">Memcached - сервис кеширования данных в памяти</msg>
+            <msg name="hint_package_memcached">Установить сервер Memcached</msg>
+        </messages>
+        <messages name="desktop">
+            <msg name="modernmenu_ammina_memcached">Настройки Memcached</msg>
+            <msg name="modernmenu_ammina">AmminaISP</msg>
+        </messages>
+        <messages name="ammina_memcached">
+            <msg name="title">Настройка Memcached</msg>
+            <msg name="ammina_cachesize">Размер доступной памяти, Мб</msg>
+            <msg name="hint_ammina_cachesize">Размер доступной памяти, Мб. Не должно превышать размер свободной памяти
+            </msg>
+            <msg name="ammina_maxconn">Максимальное количество подключений</msg>
+            <msg name="hint_ammina_maxconn">Максимальное количество подключений</msg>
+            <msg name="ammina_issocket">Создавать подключение через сокет</msg>
+            <msg name="hint_ammina_issocket">Создавать подключение через сокет</msg>
+            <msg name="ammina_note">Для подключения при помощи сокета используйте значение
+                /var/run/memcached/memcached.sock
+            </msg>
+            <msg name="ammina_note2">Для подключения по TCP протоколу: хост = localhost, порт = 11211</msg>
+        </messages>
+    </lang>
+</mgrdata>
