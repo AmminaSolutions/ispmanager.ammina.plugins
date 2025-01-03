@@ -49,4 +49,29 @@ class Utils
 		}
 		return $value;
 	}
+
+	public static function joinPaths(string $basePath, string ...$paths): string
+	{
+		foreach ($paths as $index => $path) {
+			if (empty($path) && $path !== '0') {
+				unset($paths[$index]);
+			} else {
+				$paths[$index] = DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
+			}
+		}
+
+		return $basePath . implode('', $paths);
+	}
+
+	public static function removePathRoot(string $path, ?string $root = null): string
+	{
+		if (is_null($root)) {
+			$root = $_SERVER['DOCUMENT_ROOT'];
+		}
+		$path = rtrim($path, DIRECTORY_SEPARATOR);
+		if (str_starts_with($path, $root)) {
+			$path = substr($path, strlen($root));
+		}
+		return ltrim($path, DIRECTORY_SEPARATOR);
+	}
 }

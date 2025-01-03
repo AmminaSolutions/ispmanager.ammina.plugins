@@ -2,7 +2,8 @@
 
 namespace AmminaISP\Core;
 
-function checkDirPath($path, $permission = 0700): bool
+
+function checkDirPath($path, $permission = 0760): bool
 {
 	return Utils::checkDirPath($path, $permission);
 }
@@ -25,4 +26,14 @@ function isOn(string $value): bool
 function checkOnOff(string $value): string
 {
 	return Utils::checkOnOff($value);
+}
+
+function joinPaths(string $basePath, string ...$paths): string
+{
+	return Utils::joinPaths($basePath, ...$paths);
+}
+
+function removePathRoot(string $path, ?string $root = null): string
+{
+	return Utils::removePathRoot($path, $root);
 }
