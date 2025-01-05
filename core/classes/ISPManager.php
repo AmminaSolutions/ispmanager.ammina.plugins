@@ -25,6 +25,14 @@ class ISPManager
 
 	}
 
+	/**
+	 * Выполнение команды
+	 *
+	 * @param string $function
+	 * @param array $arParams
+	 * @param string $manager
+	 * @return array
+	 */
 	public function command(string $function, array $arParams = [], string $manager = "ispmgr"): array
 	{
 		$strCommand = $this->managerCommand . " -m " . $manager . " -o json " . $function;
@@ -40,33 +48,60 @@ class ISPManager
 		return json_decode(implode("\n", $strResult), true);
 	}
 
+	/**
+	 * Создать список кодировок
+	 *
+	 * @param array $list
+	 * @return void
+	 */
 	public function makeCharset(array $list): void
 	{
 		file_put_contents(joinPaths($this->managerPath, 'etc/charset'), implode("\n", $list));
 	}
 
-	protected function messageCommandInstall($strText, $arParams = []): void
+	/**
+	 * Сообщение о начале выполнения команды
+	 *
+	 * @param string $message
+	 * @param array $params
+	 * @return void
+	 */
+	protected function messageCommand(string $message, array $params = []): void
 	{
-		Console::showColoredString($strText, 'light_green', null, true);
-		$strParams = '';
-		foreach ($arParams as $k => $v) {
-			$strParams .= "\t" . $k . ' = ' . $v . "\n";
+		Console::showColoredString($message, 'light_green', null, true);
+		if (!empty($params)) {
+			$content = '';
+			foreach ($params as $k => $v) {
+				$content .= "\t" . $k . ' = ' . $v . "\n";
+			}
+			Console::showColoredString("Параметры: \n" . $content, 'yellow', null, true);
 		}
-		Console::showColoredString("Параметры: \n" . $strParams, 'yellow', null, true);
 	}
 
-	protected function messageCommandInstallResult($complete = true): void
+	/**
+	 * Вывод статуса выполнения команды
+	 *
+	 * @param bool $complete
+	 * @return void
+	 */
+	protected function messageCommandResult(bool $complete = true): void
 	{
 		if ($complete) {
-			Console::showColoredString("Успешно настроено", 'green', null, true);
+			Console::success('Успешно выполнено');
 		} else {
-			Console::showColoredString("Ошибка настройки", 'red', null, true);
+			Console::error('Ошибка выполнения');
 		}
 	}
 
-	protected function messageCommandWait($strText = "Ожидание завершения процесса..."): void
+	/**
+	 * Сообщение об ожидании завершения процесса
+	 *
+	 * @param string $text
+	 * @return void
+	 */
+	protected function messageCommandWait(string $text = "Ожидание завершения процесса..."): void
 	{
-		Console::showColoredString($strText, 'light_blue', null, true);
+		Console::showColoredString($text, 'light_blue', null, true);
 	}
 
 	/***************************
@@ -84,13 +119,13 @@ class ISPManager
 	 */
 	public function commandFeatureInstall(string $type, array $params, string $message = ''): void
 	{
-		$this->messageCommandInstall($message, $params);
+		$this->messageCommand($message, $params);
 		$params['elid'] = $type;
 		$params['sok'] = 'ok';
 		$params['clicked_button'] = 'ok';
 		$this->command("feature.edit", $params);
 		$result = $this->featureWait($type);
-		$this->messageCommandInstallResult($result);
+		$this->messageCommandResult($result);
 		if (!$result) {
 			throw new ISPManagerFeatureException();
 		}
@@ -178,12 +213,12 @@ class ISPManager
 		$params = [
 			'packagegroup_mta' => $this->featureTurnValue($mta, 'features.mail.mta', 'exim'),
 			'package_dovecot' => $this->featureFlagValue($dovecot, 'features.mail.dovecot'),
-			'package_postgrey' => $this->featureFlagValue($dovecot, 'features.mail.greylisting'),
-			'package_opendkim' => $this->featureFlagValue($dovecot, 'features.mail.opendkim'),
-			'package_spamassassin' => $this->featureFlagValue($dovecot, 'features.mail.spamassassin'),
-			'package_clamav' => $this->featureFlagValue($dovecot, 'features.mail.clamav'),
-			'package_sieve' => $this->featureFlagValue($dovecot, 'features.mail.sieve'),
-			'package_roundcube' => $this->featureFlagValue($dovecot, 'features.mail.roundcube'),
+			'package_postgrey' => $this->featureFlagValue($greylisting, 'features.mail.greylisting'),
+			'package_opendkim' => $this->featureFlagValue($opendkim, 'features.mail.opendkim'),
+			'package_spamassassin' => $this->featureFlagValue($spamassassin, 'features.mail.spamassassin'),
+			'package_clamav' => $this->featureFlagValue($clamav, 'features.mail.clamav'),
+			'package_sieve' => $this->featureFlagValue($sieve, 'features.mail.sieve'),
+			'package_roundcube' => $this->featureFlagValue($roundcube, 'features.mail.roundcube'),
 		];
 		$this->commandFeatureInstall("email", $params, "Настройка Возможности -> Почтовый сервер (SMTP/POP3/IMAP)");
 	}
@@ -501,11 +536,11 @@ class ISPManager
 	 */
 	public function commandAmminaAddonsOptions(string $function, array $params, string $message = ''): void
 	{
-		$this->messageCommandInstall($message, $params);
+		$this->messageCommand($message, $params);
 		$params['sok'] = 'ok';
 		$result = $this->command($function, $params);
 		$result = !array_key_exists('error', $result['doc']);
-		$this->messageCommandInstallResult($result);
+		$this->messageCommandResult($result);
 		if (!$result) {
 			throw new ISPManagerFeatureException();
 		}

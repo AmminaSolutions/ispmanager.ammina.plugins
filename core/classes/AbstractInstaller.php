@@ -120,6 +120,12 @@ abstract class AbstractInstaller
 
 	}
 
+	/**
+	 * Установка ПО (features)
+	 *
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
 	public function installFeatures(): void
 	{
 		Console::showColoredString("Установить APACHE? Если нет, то будет установлен только NGINX и работа веб-сервера всегда будет в режиме PHP-FPM. (Y/n): ", 'light_red', null, false);
@@ -146,5 +152,14 @@ abstract class AbstractInstaller
 		$ispManager->commandFeatureWireGuard();
 		$ispManager->commandFeatureRedis();
 		$ispManager->commandFeatureMemcached();
+	}
+
+	/**
+	 * Установка модулей ISPManager
+	 * @return void
+	 */
+	public function installModules(): void
+	{
+
 	}
 }
