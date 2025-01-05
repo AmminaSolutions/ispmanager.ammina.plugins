@@ -21,16 +21,9 @@ class FilesSynchronizer
 
 	public function __construct()
 	{
-		$this->rules = [
-			[
-				'from' => [
-					$_SERVER['DOCUMENT_ROOT'] . '/core/files/ispmanager',
-					$_SERVER['OS_ROOT'] . '/files/ispmanager',
-					$_SERVER['DOCUMENT_ROOT'] . '/.local/files/ispmanager',
-				],
-				'to' => '/usr/local/mgr5',
-			],
-		];
+		$this->addRule('ispmanager', '/usr/local/mgr');
+		$this->addRule('server/usr', '/usr');
+		$this->addRule('server/var', '/var');
 	}
 
 	/**
@@ -48,14 +41,16 @@ class FilesSynchronizer
 	 * Добавить правило
 	 *
 	 * @param string $from
-	 * @param string|array $to
+	 * @param string $to
 	 * @return $this
 	 */
-	public function addRule(string $from, string|array $to): static
+	public function addRule(string $from, string $to): static
 	{
-		if (!is_array($to)) {
-			$to = [$to];
-		}
+		$from = [
+			joinPaths($_SERVER['DOCUMENT_ROOT'], 'core/files', $from),
+			joinPaths($_SERVER['OS_ROOT'], 'files', $from),
+			joinPaths($_SERVER['DOCUMENT_ROOT'], '.local/files', $from),
+		];
 		$this->rules[] = [
 			'from' => $from,
 			'to' => $to,

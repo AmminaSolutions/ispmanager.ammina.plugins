@@ -35,7 +35,7 @@ abstract class AbstractRedis
 	}
 
 	/**
-	 * Выполнение функции аддона
+	 * Выполнение функции плагина
 	 * @return void
 	 */
 	public function run(): void

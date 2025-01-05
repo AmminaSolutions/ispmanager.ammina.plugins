@@ -39,6 +39,12 @@ class Console
 		'light_gray' => '47',
 	];
 
+
+	public static function showColoredString(string $string, ?string $foreground_color = null, ?string $background_color = null, bool $new_line = false): void
+	{
+		echo self::getColoredString($string, $foreground_color, $background_color, $new_line);
+	}
+
 	/**
 	 * Возвращает цветную строку
 	 *

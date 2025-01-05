@@ -35,7 +35,7 @@ abstract class AbstractMemcached
 	}
 
 	/**
-	 * Выполнение функции аддона
+	 * Выполнение функции плагина
 	 * @return void
 	 */
 	public function run(): void
