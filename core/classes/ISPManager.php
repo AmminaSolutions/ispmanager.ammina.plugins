@@ -3,6 +3,7 @@
 namespace AmminaISP\Core;
 
 use AmminaISP\Core\Exceptions\ISPManagerFeatureException;
+use AmminaISP\Core\Exceptions\ISPManagerModuleException;
 
 class ISPManager
 {
@@ -11,6 +12,7 @@ class ISPManager
 	protected string $managerCommand = '/usr/local/mgr5/sbin/mgrctl';
 	protected string $managerPath = '/usr/local/mgr5';
 
+	protected static int $maxRetryWait = 300;
 
 	public static function getInstance(): static
 	{
@@ -480,7 +482,7 @@ class ISPManager
 	{
 		$this->messageCommandWait();
 		sleep(5);
-		$maxRetry = 300;
+		$maxRetry = static::$maxRetryWait;
 		while (true) {
 			sleep(1);
 			$result = $this->command("feature");
@@ -581,5 +583,79 @@ class ISPManager
 			'ammina_issocket' => boolToFlag($this->amminaAddonValue($issocket, 'features.memcached.options.issocket', true)),
 		];
 		$this->commandAmminaAddonsOptions('ammina_memcached', $params, 'Настройка параметров Memcached');
+	}
+
+	/***************************
+	 * Группа операций modules *
+	 **************************/
+
+	/**
+	 * Установка или удаление модуля ISPManager
+	 *
+	 * @param string $module
+	 * @param bool $install
+	 * @param string $message
+	 * @return void
+	 * @throws ISPManagerModuleException
+	 */
+	public function commandModuleInstall(string $module, bool $install = true, string $message = ''): void
+	{
+		$this->messageCommand($message);
+		$params = [
+			'name' => "ispmanager-plugin-{$module}",
+			'clicked_button' => ($install ? 'install' : 'delete'),
+			'sok' => 'ok',
+		];
+		$this->command("plugin", $params);
+		$result = $this->moduleWait($module, $install);
+		$this->messageCommandResult($result);
+		if (!$result) {
+			throw new ISPManagerModuleException();
+		}
+	}
+
+	/**
+	 * Ожидание процесса установки или удаления модуля ISPManager
+	 * @param string $module
+	 * @param bool $install
+	 * @return bool
+	 */
+	protected function moduleWait(string $module, bool $install = true): bool
+	{
+		$this->messageCommandWait();
+		sleep(5);
+		$maxRetry = static::$maxRetryWait;
+		while (true) {
+			sleep(1);
+			$result = $this->command("plugin");
+			$findButton = false;
+			foreach ($result['doc']['list'] as $group) {
+				foreach ($group['elem'] as $v) {
+					if ($v['name']['$'] == 'ispmanager-plugin-' . $module) {
+						if (isset($v['setup_action']['button']['$name'])) {
+							$v['setup_action']['button'] = [$v['setup_action']['button']];
+						}
+						foreach ($v['setup_action']['button'] as $button) {
+							if ($install) {
+								if ($button['$name'] == "delete") {
+									$findButton = true;
+								}
+							} else {
+								if ($button['$name'] == "install" || $button['$name'] == "buy") {
+									$findButton = true;
+								}
+							}
+						}
+					}
+				}
+			}
+			if ($findButton) {
+				return true;
+			}
+			$maxRetry--;
+			if ($maxRetry < 0) {
+				return false;
+			}
+		}
 	}
 }

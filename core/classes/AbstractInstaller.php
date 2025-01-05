@@ -1,6 +1,9 @@
 <?php
 
 namespace AmminaISP\Core;
+
+use AmminaISP\Core\Exceptions\ISPManagerModuleException;
+
 abstract class AbstractInstaller
 {
 	public int $memorySize;
@@ -114,9 +117,9 @@ abstract class AbstractInstaller
 
 	public function install(): void
 	{
-		$this->makeCharset();
-		$this->installFeatures();
-
+		//$this->makeCharset();
+		//$this->installFeatures();
+		$this->installModules();
 
 	}
 
@@ -130,7 +133,6 @@ abstract class AbstractInstaller
 	{
 		Console::showColoredString("Установить APACHE? Если нет, то будет установлен только NGINX и работа веб-сервера всегда будет в режиме PHP-FPM. (Y/n): ", 'light_red', null, false);
 		$apache = (strtolower(readline("")) !== 'n');
-		$settings = Settings::getInstance();
 		$ispManager = ISPManager::getInstance();
 		$ispManager->commandFeatureWeb(false);
 		if ($apache) {
@@ -157,9 +159,12 @@ abstract class AbstractInstaller
 	/**
 	 * Установка модулей ISPManager
 	 * @return void
+	 * @throws ISPManagerModuleException
 	 */
 	public function installModules(): void
 	{
-
+		foreach (Settings::getInstance()->get("modules") as $module => $status) {
+			ISPManager::getInstance()->commandModuleInstall($module, $status, "Настройка Модули -> " . $module . ". " . ($status ? "Установка" : "Удаление"));
+		}
 	}
 }
