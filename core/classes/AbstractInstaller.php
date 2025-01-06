@@ -109,12 +109,12 @@ abstract class AbstractInstaller
 	public function install(): void
 	{
 		//$this->makeCharset();
-		$this->installFilesMgr();
+		//$this->installFilesMgr();
 		//$this->installIspMgrConfig();
 		//$this->setBrandInfo();
 		//$this->installFeatures();
 		//$this->installModules();
-		//$this->installPhpExtesions();
+		//$this->installPhpExtensions();
 		$this->installPhpSettings();
 		//$this->installFiles();
 	}
@@ -229,7 +229,7 @@ abstract class AbstractInstaller
 	 *
 	 * @return void
 	 */
-	public function installPhpExtesions(): void
+	public function installPhpExtensions(): void
 	{
 		Console::showColoredString('Установка расширений PHP', 'light_green', null, true);
 		$phpVersions = ISPManager::getInstance()->command('phpversions');
@@ -540,7 +540,12 @@ abstract class AbstractInstaller
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'openswoole', 'openswoole');
 	}
 
+	/**
+	 * Настраиваем PHP
+	 * @return void
+	 */
 	public function installPhpSettings(): void
 	{
+
 	}
 }
