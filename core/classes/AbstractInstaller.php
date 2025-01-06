@@ -3,6 +3,7 @@
 namespace AmminaISP\Core;
 
 use AmminaISP\Core\Exceptions\ISPManagerModuleException;
+use AmminaISP\Core\Exceptions\ISPManagerMysqlSettingException;
 
 abstract class AbstractInstaller
 {
@@ -116,7 +117,8 @@ abstract class AbstractInstaller
 		//$this->installModules();
 		//$this->installPhpExtensions();
 		//$this->installPhpSettingsShowUsers();
-		$this->installPhpSettings();
+		//$this->installPhpSettings();
+		$this->installMysqlSettings();
 		//$this->installFiles();
 	}
 
@@ -630,14 +632,21 @@ abstract class AbstractInstaller
 		}
 	}
 
+	/**
+	 * Настройка параметров PHP для версии
+	 * @param string $phpVersion
+	 * @return void
+	 */
 	public function installPhpSettingsForVersion(string $phpVersion): void
 	{
 		$ispManager = IspManager::getInstance();
 		$options = Settings::getInstance()->get('php_settings.all');
 		$versionOptions = Settings::getInstance()->get("php_settings.{$phpVersion}");
+		$matchedOptions = $this->matchOptions['php'];
 		if (is_array($versionOptions)) {
 			$options = [...$options, ...$versionOptions];
 		}
+		$options = [...$options, ...$matchedOptions];
 		$optionForText = [];
 		foreach ($options as $option => $value) {
 			$optionForText[] = "\t{$option} = {$value}";
@@ -645,6 +654,80 @@ abstract class AbstractInstaller
 		Console::showColoredString("PHP v.{$phpVersion}: \n" . implode("\n", $optionForText), 'yellow', false, true);
 		foreach ($options as $option => $value) {
 			$ispManager->commandPhpSettings($phpVersion, $option, $value);
+		}
+	}
+
+	/**
+	 * Настройка параметров mysql серверов
+	 *
+	 * @return void
+	 * @throws ISPManagerMysqlSettingException
+	 */
+	public function installMysqlSettings(): void
+	{
+		Console::showColoredString("Настройка параметров для Mysql серверов", 'light_green', null, true);
+		$mysqlServers = ISPManager::getInstance()->commandMysqlServerList();
+		foreach ($mysqlServers as $server => $serverData) {
+			$this->installMysqlSettingsVersion($server);
+		}
+	}
+
+	/**
+	 * Настраиваем mysql сервер
+	 * @param string $serverName
+	 * @return void
+	 * @throws ISPManagerMysqlSettingException
+	 */
+	public function installMysqlSettingsVersion(string $serverName): void
+	{
+		Console::showColoredString("Mysql сервер {$serverName}:", 'yellow', null, true);
+		$ispManager = IspManager::getInstance();
+		$mysqlServers = $ispManager->commandMysqlServerList();
+		if (!array_key_exists($serverName, $mysqlServers)) {
+			return;
+		}
+		$info = $ispManager->getMysqlVersion($serverName);
+		$versionOptions = null;
+		$versionFullOptions = null;
+		if (!is_null($info)) {
+			$serverType = $info[0];
+			$serverVersion = explode('.', $info[1]);
+			$serverVersion = "{$serverVersion[0]}.{$serverVersion[1]}";
+			$serverVersionFull = $info[1];
+			$versionOptions = (Settings::getInstance()->get("mysql_settings.version.{$serverType}") ?? [])[$serverVersion] ?? null;
+			$versionFullOptions = (Settings::getInstance()->get("mysql_settings.version.{$serverType}") ?? [])[$serverVersionFull] ?? null;
+		}
+		$options = Settings::getInstance()->get('mysql_settings.all');
+		$nameOptions = Settings::getInstance()->get("mysql_settings.name.{$serverName}");
+		$matchedOptions = $this->matchOptions['mysql'];
+		$options = [...$options, ...$matchedOptions];
+		if (is_array($versionOptions)) {
+			$options = [...$options, ...$versionOptions];
+		}
+		if (is_array($versionFullOptions)) {
+			$options = [...$options, ...$versionFullOptions];
+		}
+		if (is_array($nameOptions)) {
+			$options = [...$options, ...$nameOptions];
+		}
+		foreach ($options as $option => $optionValue) {
+			$options[str_replace('-', '_', $option)] = $optionValue;
+		}
+
+		foreach ($options as $option => $optionValue) {
+			$parameter = $ispManager->commandMysqlServerSetting($serverName, $option);
+			if (is_null($parameter)) {
+				continue;
+			}
+			if ($parameter['value'] != $optionValue) {
+				Console::showColoredString("\t{$option}: {$parameter['value']} -> {$optionValue}", 'yellow', null, true);
+				$ispManager->commandMysqlServerSetSetting($serverName, $option, $parameter['type'], $optionValue);
+
+				$parameter = $ispManager->commandMysqlServerSetting($serverName, $option);
+				if ($parameter['value'] != $optionValue) {
+					Console::error("Ошибка применения значения: {$option}: {$parameter['value']} -> {$optionValue}");
+				}
+			}
 		}
 	}
 }

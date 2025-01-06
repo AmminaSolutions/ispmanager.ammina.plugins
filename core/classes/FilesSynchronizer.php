@@ -43,6 +43,7 @@ class FilesSynchronizer
 	{
 		$this->clearRules();
 		$this->addRule('ispmanager', '/usr/local/mgr5');
+		$this->addRule('server/etc', '/etc');
 		$this->addRule('server/usr', '/usr');
 		$this->addRule('server/var', '/var');
 		return $this;

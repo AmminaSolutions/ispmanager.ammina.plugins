@@ -4,6 +4,7 @@ namespace AmminaISP\Core;
 
 use AmminaISP\Core\Exceptions\ISPManagerFeatureException;
 use AmminaISP\Core\Exceptions\ISPManagerModuleException;
+use AmminaISP\Core\Exceptions\ISPManagerMysqlSettingException;
 
 class ISPManager
 {
@@ -13,6 +14,7 @@ class ISPManager
 	protected string $managerPath = '/usr/local/mgr5';
 
 	protected static int $maxRetryWait = 300;
+	protected array $serversMysqlList = [];
 
 	public static function getInstance(): static
 	{
@@ -503,7 +505,6 @@ class ISPManager
 		sleep(5);
 		$maxRetry = static::$maxRetryWait;
 		while (true) {
-			sleep(1);
 			$result = $this->command("feature");
 			$findStatus = false;
 			foreach ($result['doc']['elem'] as $v) {
@@ -520,6 +521,7 @@ class ISPManager
 			if ($maxRetry < 0) {
 				return false;
 			}
+			sleep(1);
 		}
 	}
 
@@ -645,7 +647,6 @@ class ISPManager
 		sleep(5);
 		$maxRetry = static::$maxRetryWait;
 		while (true) {
-			sleep(1);
 			$result = $this->command("plugin");
 			$findButton = false;
 			foreach ($result['doc']['list'] as $group) {
@@ -675,6 +676,7 @@ class ISPManager
 			if ($maxRetry < 0) {
 				return false;
 			}
+			sleep(1);
 		}
 	}
 
@@ -791,6 +793,13 @@ class ISPManager
 		$this->command("phpconf.resume", $params);
 	}
 
+	/**
+	 * Установить настройку PHP
+	 * @param string $phpVersion
+	 * @param string $option
+	 * @param mixed $value
+	 * @return void
+	 */
 	public function commandPhpSettings(string $phpVersion, string $option, mixed $value): void
 	{
 		$params = [
@@ -799,5 +808,222 @@ class ISPManager
 			'value' => $value,
 		];
 		$this->command("phpconf.edit", $params);
+	}
+
+	/**
+	 * Список mysql серверов
+	 * @return array
+	 */
+	public function commandMysqlServerList(): array
+	{
+		$result = [];
+		$data = $this->command("db.server");
+		foreach ($data['doc']['elem'] as $elem) {
+			if (strtolower($elem['type']['$']) != "mysql") {
+				continue;
+			}
+			$result[$elem['name']['$']] = [
+				'host' => $elem['host']['$'],
+				'id' => $elem['id']['$'],
+				'version' => $elem['savedver']['$'],
+				'username' => $elem['username']['$'],
+				'password' => $elem['password']['$'],
+			];
+		}
+		$this->serversMysqlList = $result;
+		return $result;
+	}
+
+	/**
+	 * Получаем описание параметра mysql
+	 * @param string $serverName
+	 * @param string $optionName
+	 * @return array|null
+	 */
+	public function commandMysqlServerSetting(string $serverName, string $optionName): ?array
+	{
+		$result = [];
+		$params = [
+			'plid' => $serverName,
+			'elid' => $optionName,
+		];
+		$data = $this->command("db.server.settings.edit", $params);
+		if (array_key_exists('error', $data['doc'])) {
+			return null;
+		}
+		if ($data['doc']['type_int']['$'] == "on") {
+			$result['type'] = 'int';
+		} elseif ($data['doc']['type_bool']['$'] == "on") {
+			$result['type'] = 'bool';
+		} elseif ($data['doc']['type_str']['$'] == "on") {
+			$result['type'] = 'string';
+		}
+		$result['value'] = $data['doc']['value']['$'];
+		$result['use_default'] = $data['doc']['use_default']['$'];
+		return $result;
+	}
+
+	/**
+	 * Установить настройку для mysql сервера
+	 * @param string $serverName
+	 * @param string $optionName
+	 * @param string $type
+	 * @param mixed $value
+	 * @return void
+	 * @throws ISPManagerMysqlSettingException
+	 */
+	public function commandMysqlServerSetSetting(string $serverName, string $optionName, string $type, mixed $value): void
+	{
+		$params = [
+			"plid" => $serverName,
+			"elid" => $optionName,
+		];
+		if ($type === 'int') {
+			$params['int_value'] = $value;
+		} elseif ($type === 'bool') {
+			$params['bool_value'] = $value;
+		} else {
+			$params['str_value'] = "'{$value}'";
+		}
+		$params['sok'] = 'ok';
+		$params['clicked_button'] = 'ok';
+		$this->command("db.server.settings.edit", $params);
+		$result = $this->waitMysqlServer($serverName);
+		//$this->messageCommandResult($result);
+		if (!$result) {
+			throw new ISPManagerMysqlSettingException();
+		}
+	}
+
+	/**
+	 * Ожидаем mysql сервер
+	 * @param string $serverName
+	 * @return bool
+	 */
+	public function waitMysqlServer(string $serverName): bool
+	{
+		sleep(3);
+		$maxRetry = static::$maxRetryWait;
+		while (true) {
+			$connection = $this->getMysqlConnection($serverName);
+			if ($connection) {
+				$connection->close();
+				return true;
+			}
+			$maxRetry--;
+			if ($maxRetry < 0) {
+				return false;
+			}
+			sleep(2);
+		}
+	}
+
+	/**
+	 * Создание подключения к базе данных
+	 *
+	 * @param string $serverName
+	 * @return \mysqli|null
+	 */
+	public function getMysqlConnection(string $serverName): ?\mysqli
+	{
+		$serverSettings = $this->serversMysqlList[$serverName];
+		$hostname = $serverSettings['host'];
+		$port = null;
+		if (str_contains($hostname, ':')) {
+			[$hostname, $port] = explode(':', $hostname, 2);
+		}
+		$username = $serverSettings['username'];
+		$password = $serverSettings['password'];
+		$database = null;
+		$socket = null;
+		$connection = mysqli_connect($hostname, $username, $password, $database, $port, $socket);
+		if ($connection) {
+			return $connection;
+		}
+		return null;
+	}
+
+	/**
+	 * Возвращает информацию о mysql сервере
+	 * @param string $serverName
+	 * @return array|null
+	 */
+	public function getMysqlVersion(string $serverName): ?array
+	{
+		$connection = $this->getMysqlConnection($serverName);
+		if ($connection) {
+			$serverType = null;
+			$forVersionNum = '';
+			$version = $this->commandMysqlServerSetting($serverName, 'version');
+			$charDir = $this->commandMysqlServerSetting($serverName, 'character-sets-dir');
+			$charDir2 = $this->commandMysqlServerSetting($serverName, 'character_sets_dir');
+			if (is_array($charDir)) {
+				$charDir = $charDir['value'] ?? '';
+			}
+			if (is_array($charDir2)) {
+				$charDir2 = $charDir2['value'] ?? '';
+			}
+			$rules = [
+				[
+					'from' => $connection->server_info,
+					'find' => 'mariadb',
+					'type' => 'mariadb',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $version,
+					'find' => 'mariadb',
+					'type' => 'mariadb',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $connection->server_info,
+					'find' => 'percona',
+					'type' => 'percona',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $charDir,
+					'find' => 'percona',
+					'type' => 'percona',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $charDir2,
+					'find' => 'percona',
+					'type' => 'percona',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $connection->server_info,
+					'find' => 'mysql',
+					'type' => 'mysql',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $charDir,
+					'find' => 'mysql',
+					'type' => 'mysql',
+					'version' => $connection->server_info,
+				],
+				[
+					'from' => $charDir2,
+					'find' => 'mysql',
+					'type' => 'mysql',
+					'version' => $connection->server_info,
+				],
+			];
+			foreach ($rules as $rule) {
+				if (str_contains(strtolower((string)$rule['from']), $rule['find'])) {
+					$serverType = $rule['type'];
+					$forVersionNum = $rule['version'];
+					break;
+				}
+			}
+			$serverVersion = implode('.', array_map('intval', explode('.', $forVersionNum, 3)));
+			$connection->close();
+			return [$serverType, $serverVersion];
+		}
+		return null;
 	}
 }
