@@ -225,22 +225,20 @@ return [
 			'swoole' => true,
 			'openswoole' => true,
 		],
-		'php' => [
-			'52' => [],
-			'53' => [],
-			'54' => [],
-			'55' => [],
-			'56' => [],
-			'70' => [],
-			'71' => [],
-			'72' => [],
-			'73' => [],
-			'74' => [],
-			'80' => [],
-			'81' => [],
-			'82' => [],
-			'83' => [],
-		],
+		'52' => [],
+		'53' => [],
+		'54' => [],
+		'55' => [],
+		'56' => [],
+		'70' => [],
+		'71' => [],
+		'72' => [],
+		'73' => [],
+		'74' => [],
+		'80' => [],
+		'81' => [],
+		'82' => [],
+		'83' => [],
 	],
 	'php_extensions' => [
 		'all' => [
@@ -329,45 +327,78 @@ return [
 			'lzf' => true,
 			'zstd' => true,
 			'msgpack' => true,
+			'brotli' => true,
 			'redis' => true,
 			'swoole' => true,
+			'openswoole' => false,
 		],
-		'isp-php52' => [],
-		'isp-php53' => [],
-		'isp-php54' => [],
-		'isp-php55' => [],
-		'isp-php56' => [],
-		'isp-php70' => [],
-		'isp-php71' => [],
-		'isp-php72' => [],
-		'isp-php73' => [],
-		'isp-php74' => [],
-		'isp-php80' => [],
-		'isp-php81' => [],
-		'isp-php82' => [],
-		'isp-php83' => [],
+		'52' => [],
+		'53' => [],
+		'54' => [],
+		'55' => [],
+		'56' => [],
+		'70' => [],
+		'71' => [],
+		'72' => [],
+		'73' => [],
+		'74' => [],
+		'80' => [],
+		'81' => [],
+		'82' => [],
+		'83' => [],
 	],
 	'php-path' => [
-		'isp-php52' => '/opt/php52',
-		'isp-php53' => '/opt/php53',
-		'isp-php54' => '/opt/php54',
-		'isp-php55' => '/opt/php55',
-		'isp-php56' => '/opt/php56',
-		'isp-php70' => '/opt/php70',
-		'isp-php71' => '/opt/php71',
-		'isp-php72' => '/opt/php72',
-		'isp-php73' => '/opt/php73',
-		'isp-php74' => '/opt/php74',
-		'isp-php80' => '/opt/php80',
-		'isp-php81' => '/opt/php81',
-		'isp-php82' => '/opt/php82',
-		'isp-php83' => '/opt/php83',
+		'52' => '/opt/php52',
+		'53' => '/opt/php53',
+		'54' => '/opt/php54',
+		'55' => '/opt/php55',
+		'56' => '/opt/php56',
+		'70' => '/opt/php70',
+		'71' => '/opt/php71',
+		'72' => '/opt/php72',
+		'73' => '/opt/php73',
+		'74' => '/opt/php74',
+		'80' => '/opt/php80',
+		'81' => '/opt/php81',
+		'82' => '/opt/php82',
+		'83' => '/opt/php83',
 	],
 	'php_settings_show_user' => [
-		'display_errors',
-		'memory_limit',
-		'mbstring.func_overload',
-		'mbstring.internal_encoding',
+		'all' => [
+			'display_errors',
+			'memory_limit',
+			'mbstring.internal_encoding',
+		],
+		'52' => [
+			'mbstring.func_overload',
+		],
+		'53' => [
+			'mbstring.func_overload',
+		],
+		'54' => [
+			'mbstring.func_overload',
+		],
+		'55' => [
+			'mbstring.func_overload',
+		],
+		'56' => [
+			'mbstring.func_overload',
+		],
+		'70' => [
+			'mbstring.func_overload',
+		],
+		'71' => [
+			'mbstring.func_overload',
+		],
+		'72' => [
+			'mbstring.func_overload',
+		],
+		'73' => [
+			'mbstring.func_overload',
+		],
+		'74' => [
+			'mbstring.func_overload',
+		],
 	],
 	'php_settings' => [
 		'all' => [
@@ -407,46 +438,46 @@ return [
 			'mail.add_x_header' => 'Off',
 			'disable_functions' => '',
 		],
-		'isp-php52' => [
+		'52' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php53' => [
+		'53' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php54' => [
+		'54' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php55' => [
+		'55' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php56' => [
+		'56' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php70' => [
+		'70' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php71' => [
+		'71' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php72' => [
+		'72' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php73' => [
+		'73' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php74' => [
+		'74' => [
 			'mbstring.func_overload' => '2',
 		],
-		'isp-php80' => [
+		'80' => [
 			'opcache.jit_buffer_size' => '512M',
 		],
-		'isp-php81' => [
+		'81' => [
 			'opcache.jit_buffer_size' => '512M',
 		],
-		'isp-php82' => [
+		'82' => [
 			'opcache.jit_buffer_size' => '512M',
 		],
-		'isp-php83' => [
+		'83' => [
 			'opcache.jit_buffer_size' => '512M',
 		],
 	],

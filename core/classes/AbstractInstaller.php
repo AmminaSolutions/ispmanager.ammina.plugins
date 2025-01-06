@@ -114,7 +114,7 @@ abstract class AbstractInstaller
 		//$this->setBrandInfo();
 		//$this->installFeatures();
 		//$this->installModules();
-		//$this->installPhpExtensions();
+		$this->installPhpExtensions();
 		$this->installPhpSettings();
 		//$this->installFiles();
 	}
@@ -242,6 +242,7 @@ abstract class AbstractInstaller
 			if (is_null($phpPath)) {
 				continue;
 			}
+			/*
 			$this->installPhpExtensionZstd($version);
 			$this->installPhpExtensionLzf($version);
 			$this->installPhpExtensionIgbinary($version);
@@ -250,6 +251,8 @@ abstract class AbstractInstaller
 			$this->installPhpExtensionRedis($version);
 			$this->installPhpExtensionSwoole($version);
 			$this->installPhpExtensionOpenSwoole($version);
+*/
+			$this->installPhpExtensionsForVersion($version);
 		}
 	}
 
@@ -260,7 +263,7 @@ abstract class AbstractInstaller
 	 */
 	protected function phpPathByVersionName(string $phpVersion): ?string
 	{
-		$phpPath = Settings::getInstance()->get("php-path.isp-php{$phpVersion}");
+		$phpPath = Settings::getInstance()->get("php-path.{$phpVersion}");
 		if (!file_exists($phpPath)) {
 			return null;
 		}
@@ -292,7 +295,7 @@ abstract class AbstractInstaller
 	protected function hasInstallPhpExtension(string $phpVersion, string $extension): bool
 	{
 		$default = Settings::getInstance()->get("php_extensions_install.default.{$extension}");
-		$forVersion = Settings::getInstance()->get("php_extensions_install.php.{$phpVersion}.{$extension}");
+		$forVersion = Settings::getInstance()->get("php_extensions_install.{$phpVersion}.{$extension}");
 		$result = is_null($forVersion) ? $default : $forVersion;
 		if (($result === true) || (is_array($result) && $result['install'] === true)) {
 			return true;
@@ -312,7 +315,7 @@ abstract class AbstractInstaller
 		if (is_null($result)) {
 			$result = [];
 		}
-		$forVersion = Settings::getInstance()->get("php_extensions_install.php.{$phpVersion}.{$extension}");
+		$forVersion = Settings::getInstance()->get("php_extensions_install.{$phpVersion}.{$extension}");
 		if (is_array($forVersion) && array_key_exists('options', $forVersion) && is_array($forVersion['options'])) {
 			$result = [...$result, ...$forVersion['options']];
 		}
@@ -538,6 +541,43 @@ abstract class AbstractInstaller
 		]);
 		$command = "{$phpPath}/bin/pecl install -D '{$lineOptions}' openswoole";
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'openswoole', 'openswoole');
+	}
+
+	/**
+	 * Включаем или отключаем расширения PHP для версии
+	 * @param string $phpVersion
+	 * @return void
+	 */
+	public function installPhpExtensionsForVersion(string $phpVersion): void
+	{
+		Console::showColoredString("Настройка расширений для PHP v." . $phpVersion, 'light_green', null, true);
+		$ispManager = IspManager::getInstance();
+		$extensions = $ispManager->commandPhpExtensionsList($phpVersion);
+		$options = Settings::getInstance()->get('php_extensions.all');
+		$versionOptions = Settings::getInstance()->get("php_extensions.{$phpVersion}");
+		if (is_array($versionOptions)) {
+			$options = [...$options, ...$versionOptions];
+		}
+		$extensionsEnable = [];
+		$extensionsDisable = [];
+		foreach ($extensions as $extension => $status) {
+			if (!array_key_exists($extension, $options)) {
+				continue;
+			}
+			if ($options[$extension] && !$status) {
+				$extensionsEnable[] = $extension;
+			} elseif (!$options[$extension] && $status) {
+				$extensionsDisable[] = $extension;
+			}
+		}
+		if (!empty($extensionsEnable)) {
+			Console::showColoredString('Включить расширения: ' . implode(", ", $extensionsEnable), 'yellow', null, true);
+			$ispManager->commandPhpExtensionsEnable($phpVersion, $extensionsEnable);
+		}
+		if (!empty($extensionsDisable)) {
+			Console::showColoredString('Выключить расширения: ' . implode(", ", $extensionsDisable), 'yellow', null, true);
+			$ispManager->commandPhpExtensionsDisable($phpVersion, $extensionsDisable);
+		}
 	}
 
 	/**

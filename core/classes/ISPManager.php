@@ -682,6 +682,13 @@ class ISPManager
 	 * Группа операций конфигурации настроек ISPManager *
 	 ***************************************************/
 
+	/**
+	 * Общие настройки ISPManager
+	 * @param string $option
+	 * @param string $value
+	 * @param string $message
+	 * @return void
+	 */
 	public function checkConfig(string $option, string $value, string $message = ''): void
 	{
 		$this->messageCommand($message);
@@ -704,5 +711,38 @@ class ISPManager
 		}
 		$content[] = '';
 		file_put_contents("{$this->managerPath}/etc/ispmgr.conf", implode("\n", $content));
+	}
+
+	/**
+	 * Получить список расширений PHP со статусами
+	 * @param string $phpVersion
+	 * @return array
+	 */
+	public function commandPhpExtensionsList(string $phpVersion): array
+	{
+		$result = [];
+		$data = $this->command('phpextensions', ['elid' => "isp-php{$phpVersion}"]);
+		foreach ($data['doc']['elem'] as $elem) {
+			$result[$elem['name']['$']] = $elem['enabled']['$'] === 'on';
+		}
+		return $result;
+	}
+
+	public function commandPhpExtensionsEnable(string $phpVersion, array $extensions): void
+	{
+		$params = [
+			'plid' => "isp-php{$phpVersion}",
+			'elid' => array_values($extensions),
+		];
+		$this->command("phpextensions.resume", $params);
+	}
+
+	public function commandPhpExtensionsDisable(string $phpVersion, array $extensions): void
+	{
+		$params = [
+			'plid' => "isp-php{$phpVersion}",
+			'elid' => array_values($extensions),
+		];
+		$this->command("phpextensions.suspend", $params);
 	}
 }
