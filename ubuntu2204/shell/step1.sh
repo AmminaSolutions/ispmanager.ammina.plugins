@@ -48,14 +48,21 @@ dpkg-reconfigure locales
 wget -O /opt/install.ispmanager.sh http://download.ispmanager.com/install.sh
 
 echo "\n"
-read -p "${COLOR_GREEN}Установить сервер базы данных mysql? При отрицательном ответе будет установлен сервер базы данных mariadb (Y/n): ${COLOR_NORMAL}" server
-if [ "$server" = "n" ]; then
-	dbtype="mariadb"
+read -p "${COLOR_GREEN}Установить сервер базы данных mysql? При отрицательном ответе будет установлен сервер базы данных mariadb (y/N): ${COLOR_NORMAL}" server
+if [ "$server" = "y" ] || [ "$server" = "Y" ]; then
+	mysqltype="mysql"
 else
-	dbtype="mysql"
+	mysqltype="mariadb"
 fi
 
-sh /opt/install.ispmanager.sh --ispmgr6 --ignore-hostname --dbtype mysql --mysql-server "$dbtype" --release stable ISPmanager-Lite
+read -p "${COLOR_GREEN}Тип системной базы данных ISPManager (MySql/Sqlite). Установить mysql(y/N)?: ${COLOR_NORMAL}" dbtype
+if [ "$dbtype" = "y" ] || [ "$dbtype" = "Y" ]; then
+	dbtype="mysql"
+else
+	dbtype="sqlite"
+fi
+
+sh /opt/install.ispmanager.sh --ispmgr6 --ignore-hostname --dbtype $dbtype --mysql-server $mysqltype --release stable ISPmanager-Lite
 
 ## Устанавливаем PHP83 для инсталлятора
 /usr/local/mgr5/sbin/mgrctl -m ispmgr -o text feature.edit elid=altphp83 package_ispphp83_fpm=on package_ispphp83_mod_apache=off packagegroup_altphp83gr=ispphp83 sok=ok clicked_button=ok

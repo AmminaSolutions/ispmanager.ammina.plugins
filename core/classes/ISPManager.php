@@ -11,7 +11,7 @@ class ISPManager
 	protected static ?ISPManager $instance = null;
 
 	protected string $managerCommand = '/usr/local/mgr5/sbin/mgrctl';
-	protected string $managerPath = '/usr/local/mgr5';
+	public string $managerPath = '/usr/local/mgr5';
 
 	protected static int $maxRetryWait = 300;
 	protected array $serversMysqlList = [];
@@ -1025,5 +1025,41 @@ class ISPManager
 			return [$serverType, $serverVersion];
 		}
 		return null;
+	}
+
+	public function makeAmminaIspCronCommand(): void
+	{
+		$data = $this->command('scheduler', ['su' => 'root']);
+		$cronCommand = 'sh ' . $_SERVER['DOCUMENT_ROOT'] . '/cron.sh';
+		$finded = false;
+		foreach ($data['doc']['elem'] as $elem) {
+			if (str_starts_with($elem['command']['$'], $cronCommand)) {
+				$finded = true;
+				if ($elem['active']['$'] != 'on') {
+					$params = [
+						'su' => 'root',
+						'elid' => $elem['key']['$'],
+						'sok' => 'ok',
+					];
+					$this->command("scheduler.resume", $params);
+				}
+				break;
+			}
+		}
+		if (!$finded) {
+			$params = [
+				'su' => 'root',
+				'command' => '"' . $cronCommand . '"',
+				'schedule_type' => 'type_expert',
+				'active' => 'on',
+				'input_min' => '*',
+				'input_hour' => '*',
+				'input_dmonth' => '*',
+				'input_month' => '*',
+				'input_dweek' => '*',
+				'sok' => 'ok',
+			];
+			$this->command('scheduler.edit', $params);
+		}
 	}
 }

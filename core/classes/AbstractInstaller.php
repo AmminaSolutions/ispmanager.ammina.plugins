@@ -31,6 +31,10 @@ abstract class AbstractInstaller
 		$this->matchOptionsByMemory();
 	}
 
+	/**
+	 * Расчет настроек OpCache
+	 * @return void
+	 */
 	protected function matchOptionsOpcache(): void
 	{
 		$this->matchOptions['php']['opcache.memory_consumption'] = intval($this->memorySize / 8388608);
@@ -42,6 +46,10 @@ abstract class AbstractInstaller
 		$this->matchOptions['php']['opcache.interned_strings_buffer'] = intval($this->matchOptions['php']['opcache.memory_consumption'] / 4);
 	}
 
+	/**
+	 * Расчет параметров настроек в зависимости от доступной памяти
+	 * @return void
+	 */
 	protected function matchOptionsByMemory(): void
 	{
 		$settings = Settings::getInstance();
@@ -107,19 +115,27 @@ abstract class AbstractInstaller
 		}
 	}
 
+	/**
+	 * Установка и конфигурирование сервисов
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 * @throws ISPManagerModuleException
+	 * @throws ISPManagerMysqlSettingException
+	 */
 	public function install(): void
 	{
-		//$this->makeCharset();
-		//$this->installFilesMgr();
-		//$this->installIspMgrConfig();
-		//$this->setBrandInfo();
-		//$this->installFeatures();
-		//$this->installModules();
-		//$this->installPhpExtensions();
-		//$this->installPhpSettingsShowUsers();
-		//$this->installPhpSettings();
+		$this->makeCharset();
+		$this->installFilesMgr();
+		$this->installIspMgrConfig();
+		$this->setBrandInfo();
+		$this->installFeatures();
+		$this->installModules();
+		$this->installPhpExtensions();
+		$this->installPhpSettingsShowUsers();
+		$this->installPhpSettings();
 		$this->installMysqlSettings();
-		//$this->installFiles();
+		$this->installFiles();
+		$this->installAmminaIspCron();
 	}
 
 	/**
@@ -166,6 +182,40 @@ abstract class AbstractInstaller
 		Console::showColoredString("Проверяем конфиг ISPManager", 'light_green', null, true);
 		foreach (Settings::getInstance()->get("ispmanager") as $option => $value) {
 			ISPManager::getInstance()->checkConfig($option, $value, "Настройка ISPManager: {$option} -> {$value}");
+		}
+	}
+
+	public function setBrandInfo(): void
+	{
+		$themes = [
+			"orion",
+			"z-mobile",
+			"dragon",
+		];
+		foreach ($themes as $theme) {
+			$params = [
+				"h" => 26,
+				"s" => 61,
+				"l" => -8,
+				"site" => '"https://ammina-isp.ru/"',
+				"signature" => '"Веб-студия Ammina"',
+				"homepage" => '"https://ammina-isp.ru/"',
+				"contacts" => '"https://ammina-isp.ru/contact/"',
+				"mainlogo" => "logo.svg",
+				"theme" => $theme,
+				"sok" => "ok",
+				'clicked_button' => 'ok',
+			];
+			ISPManager::getInstance()->command('brand', $params);
+			$xml = simplexml_load_string(file_get_contents(ISPManager::getInstance()->managerPath . '/etc/brand_settings.xml'));
+			$json = json_encode($xml);
+			$data = json_decode($json, true);
+			foreach ($data['brand'] as $brand) {
+				if ($brand['@attributes']['theme'] == $theme) {
+					$path = ISPManager::getInstance()->managerPath . '/' . $brand['@attributes']['path'] . '/logo.svg';
+					file_put_contents($path, file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/core/logo.svg'));
+				}
+			}
 		}
 	}
 
@@ -729,5 +779,11 @@ abstract class AbstractInstaller
 				}
 			}
 		}
+	}
+
+	public function installAmminaIspCron()
+	{
+		Console::showColoredString("Добавляем системное задание AmminaISP", 'light_green', null, true);
+		ISPManager::getInstance()->makeAmminaIspCronCommand();
 	}
 }

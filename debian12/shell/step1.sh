@@ -46,7 +46,13 @@ read -p "${COLOR_GREEN}После нажатия enter выберите необ
 dpkg-reconfigure locales
 
 wget -O /opt/install.ispmanager.sh http://download.ispmanager.com/install.sh
-sh /opt/install.ispmanager.sh --ispmgr6 --ignore-hostname --dbtype mysql --release stable ISPmanager-Lite
+read -p "${COLOR_GREEN}Тип системной базы данных ISPManager (MySql/Sqlite). Установить mysql(y/N)?: ${COLOR_NORMAL}" dbtype
+if [ "$dbtype" = "y" ] || [ "$dbtype" = "Y" ]; then
+	dbtype="mysql"
+else
+	dbtype="sqlite"
+fi
+sh /opt/install.ispmanager.sh --ispmgr6 --ignore-hostname --dbtype $dbtype --release stable ISPmanager-Lite
 
 ## Устанавливаем PHP83 для инсталлятора
 /usr/local/mgr5/sbin/mgrctl -m ispmgr -o text feature.edit elid=altphp83 package_ispphp83_fpm=on package_ispphp83_mod_apache=off packagegroup_altphp83gr=ispphp83 sok=ok clicked_button=ok
