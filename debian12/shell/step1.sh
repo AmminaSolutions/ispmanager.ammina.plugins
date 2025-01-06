@@ -37,7 +37,7 @@ curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dea
 NODE_MAJOR=22
 echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 apt update
-apt install -y psmisc pv htop iotop iftop nethogs iptstate apachetop dnstop powertop atop nodejs git-core jpegoptim optipng pngquant gifsicle webp autoconf gcc make libzstd1 libzstd-dev zstd libpcre2-dev libssl-dev linux-headers-generic linux-headers-generic build-essential catdoc poppler-utils poppler-data
+apt install -y psmisc pv htop iotop iftop nethogs iptstate apachetop dnstop powertop atop nodejs git-core jpegoptim optipng pngquant gifsicle webp autoconf gcc make libzstd1 libzstd-dev zstd libpcre2-dev libssl-dev linux-headers-generic linux-headers-generic build-essential catdoc poppler-utils poppler-data pkg-config libbrotli-dev libcurl4-openssl-dev lz4 liblz4-1 liblz4-dev sqlite3 libsqlite3-dev libc-ares-dev libc-ares2 liburing2 liburing-dev
 
 npm install yarn npm-check-updates gyp node-gyp node-pre-gyp -g
 

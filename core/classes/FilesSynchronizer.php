@@ -21,9 +21,7 @@ class FilesSynchronizer
 
 	public function __construct()
 	{
-		$this->addRule('ispmanager', '/usr/local/mgr');
-		$this->addRule('server/usr', '/usr');
-		$this->addRule('server/var', '/var');
+		$this->setDefaultRules();
 	}
 
 	/**
@@ -34,6 +32,30 @@ class FilesSynchronizer
 	public function clearRules(): static
 	{
 		$this->rules = [];
+		return $this;
+	}
+
+	/**
+	 * Создать правила по умолчанию
+	 * @return $this
+	 */
+	public function setDefaultRules(): static
+	{
+		$this->clearRules();
+		$this->addRule('ispmanager', '/usr/local/mgr5');
+		$this->addRule('server/usr', '/usr');
+		$this->addRule('server/var', '/var');
+		return $this;
+	}
+
+	/**
+	 * Создать правила синхронизации только файлов ISPManager
+	 * @return $this
+	 */
+	public function setOnlyIspManagerRules(): static
+	{
+		$this->clearRules();
+		$this->addRule('ispmanager', '/usr/local/mgr5');
 		return $this;
 	}
 
@@ -62,9 +84,9 @@ class FilesSynchronizer
 	 * Выполнение синхронизации файлов
 	 *
 	 * @param bool $showMessages
-	 * @return void
+	 * @return FilesSynchronizer
 	 */
-	public function run(bool $showMessages = false): void
+	public function run(bool $showMessages = false): static
 	{
 		$this->afterCommands = [];
 		foreach ($this->rules as $rule) {
@@ -74,6 +96,7 @@ class FilesSynchronizer
 		if ($showMessages) {
 			Console::success("Синхронизация выполнена");
 		}
+		return $this;
 	}
 
 	/**
@@ -172,7 +195,7 @@ class FilesSynchronizer
 		foreach ($this->afterCommands as $command) {
 			if ($showMessages) {
 				Console::notice("Выполняем команду: {$command}");
-				exec($command);
+				system($command);
 			}
 		}
 	}

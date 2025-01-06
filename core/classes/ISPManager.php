@@ -473,6 +473,25 @@ class ISPManager
 	}
 
 	/**
+	 * Группа features PHP
+	 * @param string $version
+	 * @param bool|null $install
+	 * @param bool|null $fpm
+	 * @param bool|null $modApache
+	 * @return void
+	 * @throws ISPManagerFeatureException
+	 */
+	public function commandFeaturePhp(string $version, ?bool $install = null, ?bool $fpm = null, ?bool $modApache = null): void
+	{
+		$params = [
+			"packagegroup_altphp{$version}gr" => $this->featureTurnValue($install, "features.php.{$version}.install", "ispphp{$version}"),
+			"package_ispphp{$version}_fpm" => $this->featureFlagValue($fpm, "features.php.{$version}.fpm"),
+			"package_ispphp{$version}_mod_apache" => $this->featureFlagValue($modApache, "features.php.{$version}.mod_apache"),
+		];
+		$this->commandFeatureInstall("altphp{$version}", $params, "Настройка Возможности -> PHP v.{$version}");
+	}
+
+	/**
 	 * Ожидаем окончания операций feature
 	 *
 	 * @param string $feature
@@ -657,5 +676,33 @@ class ISPManager
 				return false;
 			}
 		}
+	}
+
+	/****************************************************
+	 * Группа операций конфигурации настроек ISPManager *
+	 ***************************************************/
+
+	public function checkConfig(string $option, string $value, string $message = ''): void
+	{
+		$this->messageCommand($message);
+		$content = explode("\n", trim(file_get_contents("{$this->managerPath}/etc/ispmgr.conf")));
+		$finded = false;
+		foreach ($content as $k => $v) {
+			$v = trim($v);
+			if ($v == '') {
+				unset($content[$k]);
+				continue;
+			}
+			if (str_starts_with($v, "{$option} ")) {
+				$finded = true;
+				$content[$k] = "{$option} {$value}";
+				break;
+			}
+		}
+		if (!$finded) {
+			$content[] = "{$option} {$value}";
+		}
+		$content[] = '';
+		file_put_contents("{$this->managerPath}/etc/ispmgr.conf", implode("\n", $content));
 	}
 }

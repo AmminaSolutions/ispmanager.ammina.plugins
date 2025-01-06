@@ -2,7 +2,7 @@
 
 include_once(__DIR__ . "/../include.php");
 
-exec("systemctl stop cron");
+@exec("systemctl stop cron");
 $memcached = new \AmminaISP\Debian12\Addons\Memcached();
 $memcached->run();
-exec("systemctl start cron");
+@exec("systemctl start cron");
