@@ -114,7 +114,8 @@ abstract class AbstractInstaller
 		//$this->setBrandInfo();
 		//$this->installFeatures();
 		//$this->installModules();
-		$this->installPhpExtensions();
+		//$this->installPhpExtensions();
+		//$this->installPhpSettingsShowUsers();
 		$this->installPhpSettings();
 		//$this->installFiles();
 	}
@@ -232,12 +233,8 @@ abstract class AbstractInstaller
 	public function installPhpExtensions(): void
 	{
 		Console::showColoredString('Установка расширений PHP', 'light_green', null, true);
-		$phpVersions = ISPManager::getInstance()->command('phpversions');
-		foreach ($phpVersions['doc']['elem'] as $elem) {
-			if ($elem['key']['$'] == "native") {
-				continue;
-			}
-			$version = substr($elem['key']['$'], 7);
+		$phpVersions = ISPManager::getInstance()->commandPhpVersionsList();
+		foreach ($phpVersions as $version) {
 			$phpPath = $this->phpPathByVersionName($version);
 			if (is_null($phpPath)) {
 				continue;
@@ -581,11 +578,73 @@ abstract class AbstractInstaller
 	}
 
 	/**
-	 * Настраиваем PHP
+	 * Настраиваем параметры PHP для доступности редактирования пользователями
+	 * @return void
+	 */
+	public function installPhpSettingsShowUsers(): void
+	{
+		Console::showColoredString("Выбираем параметры для показа пользователям панели", 'light_green', null, true);
+		$phpVersions = ISPManager::getInstance()->commandPhpVersionsList();
+		foreach ($phpVersions as $version) {
+			$phpPath = $this->phpPathByVersionName($version);
+			if (is_null($phpPath)) {
+				continue;
+			}
+			$this->installPhpSettingsShowUsersForVersion($version);
+		}
+	}
+
+	/**
+	 * Настраиваем параметры PHP для доступности редактирования пользователями для версии PHP
+	 * @param string $phpVersion
+	 * @return void
+	 */
+	public function installPhpSettingsShowUsersForVersion(string $phpVersion): void
+	{
+		$ispManager = IspManager::getInstance();
+		$options = Settings::getInstance()->get('php_settings_show_user.all');
+		$versionOptions = Settings::getInstance()->get("php_settings_show_user.{$phpVersion}");
+		if (is_array($versionOptions)) {
+			$options = [...$options, ...$versionOptions];
+		}
+		Console::showColoredString("PHP v.{$phpVersion}: \n\t" . implode("\n\t", $options), 'yellow', false, true);
+		foreach ($options as $option) {
+			$ispManager->commandPhpOptionShowUser($phpVersion, $option);
+		}
+	}
+
+	/**
+	 * Настраиваем параметры PHP
 	 * @return void
 	 */
 	public function installPhpSettings(): void
 	{
+		Console::showColoredString("Настройка параметров для PHP", 'light_green', null, true);
+		$phpVersions = ISPManager::getInstance()->commandPhpVersionsList();
+		foreach ($phpVersions as $version) {
+			$phpPath = $this->phpPathByVersionName($version);
+			if (is_null($phpPath)) {
+				continue;
+			}
+			$this->installPhpSettingsForVersion($version);
+		}
+	}
 
+	public function installPhpSettingsForVersion(string $phpVersion): void
+	{
+		$ispManager = IspManager::getInstance();
+		$options = Settings::getInstance()->get('php_settings.all');
+		$versionOptions = Settings::getInstance()->get("php_settings.{$phpVersion}");
+		if (is_array($versionOptions)) {
+			$options = [...$options, ...$versionOptions];
+		}
+		$optionForText = [];
+		foreach ($options as $option => $value) {
+			$optionForText[] = "\t{$option} = {$value}";
+		}
+		Console::showColoredString("PHP v.{$phpVersion}: \n" . implode("\n", $optionForText), 'yellow', false, true);
+		foreach ($options as $option => $value) {
+			$ispManager->commandPhpSettings($phpVersion, $option, $value);
+		}
 	}
 }

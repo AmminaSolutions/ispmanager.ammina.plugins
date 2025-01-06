@@ -714,6 +714,23 @@ class ISPManager
 	}
 
 	/**
+	 * Возвращает список PHP версий
+	 * @return array
+	 */
+	public function commandPhpVersionsList(): array
+	{
+		$result = [];
+		$phpVersions = $this->command('phpversions');
+		foreach ($phpVersions['doc']['elem'] as $elem) {
+			if ($elem['key']['$'] == "native") {
+				continue;
+			}
+			$result[] = substr($elem['key']['$'], 7);
+		}
+		return $result;
+	}
+
+	/**
 	 * Получить список расширений PHP со статусами
 	 * @param string $phpVersion
 	 * @return array
@@ -728,6 +745,12 @@ class ISPManager
 		return $result;
 	}
 
+	/**
+	 * Включение расширения PHP
+	 * @param string $phpVersion
+	 * @param array $extensions
+	 * @return void
+	 */
 	public function commandPhpExtensionsEnable(string $phpVersion, array $extensions): void
 	{
 		$params = [
@@ -737,6 +760,12 @@ class ISPManager
 		$this->command("phpextensions.resume", $params);
 	}
 
+	/**
+	 * Выключение расширения PHP
+	 * @param string $phpVersion
+	 * @param array $extensions
+	 * @return void
+	 */
 	public function commandPhpExtensionsDisable(string $phpVersion, array $extensions): void
 	{
 		$params = [
@@ -744,5 +773,31 @@ class ISPManager
 			'elid' => array_values($extensions),
 		];
 		$this->command("phpextensions.suspend", $params);
+	}
+
+	/**
+	 * Включаем настройку PHP для доступности пользователям
+	 * @param string $phpVersion
+	 * @param string $option
+	 * @return void
+	 */
+	public function commandPhpOptionShowUser(string $phpVersion, string $option): void
+	{
+		$params = [
+			'plid' => "isp-php{$phpVersion}",
+			'elid' => $option,
+			'value' => 'yes',
+		];
+		$this->command("phpconf.resume", $params);
+	}
+
+	public function commandPhpSettings(string $phpVersion, string $option, mixed $value): void
+	{
+		$params = [
+			'plid' => "isp-php{$phpVersion}",
+			'elid' => $option,
+			'value' => $value,
+		];
+		$this->command("phpconf.edit", $params);
 	}
 }
