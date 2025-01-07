@@ -129,7 +129,6 @@ abstract class AbstractInstaller
 		$this->installIspMgrConfig();
 		$this->setBrandInfo();
 		$this->installFeatures();
-		return;
 		$this->installModules();
 		$this->installPhpExtensions();
 		$this->installPhpSettingsShowUsers();
