@@ -55,6 +55,8 @@ else
 	mysqltype="mariadb"
 fi
 
+echo $mysqltype > $ROOT/.local/installmysql
+
 read -p "${COLOR_GREEN}Тип системной базы данных ISPManager (MySql/Sqlite). Установить mysql(y/N)?: ${COLOR_NORMAL}" dbtype
 if [ "$dbtype" = "y" ] || [ "$dbtype" = "Y" ]; then
 	dbtype="mysql"

@@ -129,6 +129,7 @@ abstract class AbstractInstaller
 		$this->installIspMgrConfig();
 		$this->setBrandInfo();
 		$this->installFeatures();
+		return;
 		$this->installModules();
 		$this->installPhpExtensions();
 		$this->installPhpSettingsShowUsers();
@@ -227,30 +228,199 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatures(): void
 	{
+		$this->installFeatureWeb();
+		$this->installFeatureEMail();
+		$this->installFeatureDns();
+		$this->installFeatureFtp();
+		$this->installFeatureMySql();
+		$this->installFeaturePhpMyAdmin();
+		$this->installFeaturePostgreeSql();
+		$this->installFeaturePhpPgAdmin();
+		$this->installFeatureQuota();
+		$this->installFeatureFail2ban();
+		$this->installFeatureAnsible();
+		$this->installFeatureDocker();
+		$this->installFeatureNodejs();
+		$this->installFeaturePython();
+		$this->installFeatureWireGuard();
+		$this->installFeatureRedis();
+		$this->installFeatureMemcached();
+		$this->installFeaturePhp();
+	}
+
+	/**
+	 * Установка features Web
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureWeb(): void
+	{
 		Console::showColoredString("Установить APACHE? Если нет, то будет установлен только NGINX и работа веб-сервера всегда будет в режиме PHP-FPM. (Y/n): ", 'light_red', null, false);
 		$apache = (strtolower(readline("")) !== 'n');
-		$ispManager = ISPManager::getInstance();
-		$ispManager->commandFeatureWeb(false);
+		ISPManager::getInstance()->commandFeatureWeb(false);
 		if ($apache) {
-			$ispManager->commandFeatureWeb(true);
+			ISPManager::getInstance()->commandFeatureWeb(true);
 		}
-		$ispManager->commandFeatureEMail();
-		$ispManager->commandFeatureDns();
-		$ispManager->commandFeatureFtp();
-		$ispManager->commandFeatureMySql();
-		$ispManager->commandFeaturePhpMyAdmin();
-		$ispManager->commandFeaturePostgreeSql();
-		$ispManager->commandFeaturePhpPgAdmin();
-		$ispManager->commandFeatureQuota();
-		$ispManager->commandFeatureFail2ban();
-		$ispManager->commandFeatureAnsible();
-		$ispManager->commandFeatureDocker();
-		$ispManager->commandFeatureNodejs();
-		$ispManager->commandFeaturePython();
-		$ispManager->commandFeatureWireGuard();
-		$ispManager->commandFeatureRedis();
-		$ispManager->commandFeatureMemcached();
-		$this->installFeaturePhp();
+	}
+
+	/**
+	 * Установка features Email
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureEMail(): void
+	{
+		ISPManager::getInstance()->commandFeatureEMail();
+	}
+
+	/**
+	 * Установка features DNS
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureDns(): void
+	{
+		ISPManager::getInstance()->commandFeatureDns();
+	}
+
+	/**
+	 * Установка features Ftp
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureFtp(): void
+	{
+		ISPManager::getInstance()->commandFeatureFtp();
+	}
+
+	/**
+	 * Установка features MySql
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureMySql(): void
+	{
+		ISPManager::getInstance()->commandFeatureMySql();
+	}
+
+	/**
+	 * Установка features PHPMyAdmin
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeaturePhpMyAdmin(): void
+	{
+		ISPManager::getInstance()->commandFeaturePhpMyAdmin();
+	}
+
+	/**
+	 * Установка features Postgresql
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeaturePostgreeSql(): void
+	{
+		ISPManager::getInstance()->commandFeaturePostgreeSql();
+	}
+
+	/**
+	 * Установка features PhpPgAdmin
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeaturePhpPgAdmin(): void
+	{
+		ISPManager::getInstance()->commandFeaturePhpPgAdmin();
+	}
+
+	/**
+	 * Установка features Quota
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureQuota(): void
+	{
+		ISPManager::getInstance()->commandFeatureQuota();
+	}
+
+	/**
+	 * Установка features fail2ban
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureFail2ban(): void
+	{
+		ISPManager::getInstance()->commandFeatureFail2ban();
+	}
+
+	/**
+	 * Установка features Ansible
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureAnsible(): void
+	{
+		ISPManager::getInstance()->commandFeatureAnsible();
+	}
+
+	/**
+	 * Установка features Docker
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureDocker(): void
+	{
+		ISPManager::getInstance()->commandFeatureDocker();
+	}
+
+	/**
+	 * Установка features Nodejs
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureNodejs(): void
+	{
+		ISPManager::getInstance()->commandFeatureNodejs();
+	}
+
+	/**
+	 * Установка features Python
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeaturePython(): void
+	{
+		ISPManager::getInstance()->commandFeaturePython();
+	}
+
+	/**
+	 * Установка features WireGuard
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureWireGuard(): void
+	{
+		ISPManager::getInstance()->commandFeatureWireGuard();
+	}
+
+	/**
+	 * Установка features Redis
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureRedis(): void
+	{
+		ISPManager::getInstance()->commandFeatureRedis();
+	}
+
+	/**
+	 * Установка features Memcached
+	 * @return void
+	 * @throws Exceptions\ISPManagerFeatureException
+	 */
+	public function installFeatureMemcached(): void
+	{
+		ISPManager::getInstance()->commandFeatureMemcached();
 	}
 
 	/**
@@ -291,7 +461,7 @@ abstract class AbstractInstaller
 			if (is_null($phpPath)) {
 				continue;
 			}
-			/*
+
 			$this->installPhpExtensionZstd($version);
 			$this->installPhpExtensionLzf($version);
 			$this->installPhpExtensionIgbinary($version);
@@ -300,7 +470,7 @@ abstract class AbstractInstaller
 			$this->installPhpExtensionRedis($version);
 			$this->installPhpExtensionSwoole($version);
 			$this->installPhpExtensionOpenSwoole($version);
-*/
+
 			$this->installPhpExtensionsForVersion($version);
 		}
 	}
@@ -781,6 +951,10 @@ abstract class AbstractInstaller
 		}
 	}
 
+	/**
+	 * Установка задания Cron AmminaISP
+	 * @return void
+	 */
 	public function installAmminaIspCron()
 	{
 		Console::showColoredString("Добавляем системное задание AmminaISP", 'light_green', null, true);

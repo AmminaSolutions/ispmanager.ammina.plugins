@@ -264,10 +264,13 @@ class ISPManager
 	 * @return void
 	 * @throws ISPManagerFeatureException
 	 */
-	public function commandFeatureMySql(?bool $mysql = null): void
+	public function commandFeatureMySql(?bool $mysql = null, ?string $package = null): void
 	{
+		if (is_null($package)) {
+			$package = 'package_mysql';
+		}
 		$params = [
-			'package_mysql' => $this->featureFlagValue($mysql, 'features.mysql.mysql'),
+			$package => $this->featureFlagValue($mysql, 'features.mysql.mysql'),
 		];
 		$this->commandFeatureInstall("mysql", $params, "Настройка Возможности -> Сервер СУБД MySQL");
 	}
