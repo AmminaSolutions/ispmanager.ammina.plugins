@@ -8,47 +8,22 @@ use function AmminaISP\Core\checkDirPath;
 use function AmminaISP\Core\checkOnOff;
 use function AmminaISP\Core\isOn;
 
-set_time_limit(60);
-
-abstract class AbstractMemcached
+abstract class AbstractMemcached extends AbstractAddon
 {
-	public string $xml = '';
 	public string $settingsFile = '/usr/local/mgr5/etc/amminaisp/memcached.ini';
 	public string $templateFileName = '/usr/local/mgr5/etc/templates/amminaisp/memcached.template';
 	public string $redisOptionsFile = '/etc/memcached.conf';
-	public string $dataAppend = '';
-
 	public string $memcachedRun = '/var/run/memcached';
 	public string $memcachedUser = 'memcache';
 
-	function __construct()
+	public function __construct()
 	{
+		parent::__construct();
 		if (!file_exists($this->memcachedRun)) {
 			mkdir($this->memcachedRun, 0755);
 			chown($this->memcachedRun, $this->memcachedUser);
 		}
 		checkDirPath($this->settingsFile);
-		$this->xml = '';
-		while (!feof(STDIN)) {
-			$this->xml .= fread(STDIN, 10000);
-		}
-	}
-
-	/**
-	 * Выполнение функции плагина
-	 * @return void
-	 */
-	public function run(): void
-	{
-		if (isset($_SERVER['PARAM_ammina_cachesize']) && isset($_SERVER['PARAM_sok']) && $_SERVER['PARAM_sok'] == "ok") {
-			$this->saveForm();
-		} else {
-			$this->openForm();
-		}
-		if (strlen($this->dataAppend) > 0) {
-			$this->xml = str_replace('</doc>', $this->dataAppend . '</doc>', $this->xml);
-		}
-		echo $this->xml;
 	}
 
 	/**
@@ -65,10 +40,9 @@ abstract class AbstractMemcached
 		if (!is_array($data)) {
 			$data = [];
 		}
-
-		$this->dataAppend .= '<ammina_cachesize>' . ($data['cachesize'] ?? 64) . '</ammina_cachesize>';
-		$this->dataAppend .= '<ammina_maxconn>' . ($data['maxconn'] ?? 1024) . '</ammina_maxconn>';
-		$this->dataAppend .= '<ammina_issocket>' . boolToFlag((bool)($data['issocket'] ?? true)) . '</ammina_issocket>';
+		$this->dataAppend['ammina_cachesize'] = ($data['cachesize'] ?? 64);
+		$this->dataAppend['ammina_maxconn'] = ($data['maxconn'] ?? 1024);
+		$this->dataAppend['ammina_issocket'] = boolToFlag((bool)($data['issocket'] ?? true));
 	}
 
 	public function saveForm(): void
@@ -79,13 +53,9 @@ abstract class AbstractMemcached
 		$content[] = 'maxconn = ' . (int)$_SERVER['PARAM_ammina_maxconn'];
 		$content[] = 'issocket = ' . (isOn($_SERVER['PARAM_ammina_issocket']) ? 1 : 0);
 		file_put_contents($this->settingsFile, implode("\n", $content));
-		$params = [];
-		$params[] = '<ammina_cachesize>' . (int)$_SERVER['PARAM_ammina_cachesize'] . '</ammina_cachesize>';
-		$params[] = '<ammina_maxconn>' . (int)$_SERVER['PARAM_ammina_maxconn'] . '</ammina_maxconn>';
-		$params[] = '<ammina_issocket>' . checkOnOff($_SERVER['PARAM_ammina_issocket']) . '</ammina_issocket>';
-		if (!empty($params)) {
-			$this->dataAppend .= implode("", $params);
-		}
+		$this->dataAppend['ammina_cachesize'] = (int)$_SERVER['PARAM_ammina_cachesize'];
+		$this->dataAppend['ammina_maxconn'] = (int)$_SERVER['PARAM_ammina_maxconn'];
+		$this->dataAppend['ammina_issocket'] = checkOnOff($_SERVER['PARAM_ammina_issocket']);
 
 		$templateReplace = [
 			"AMMINA_CACHESIZE" => (int)$_SERVER['PARAM_ammina_cachesize'],

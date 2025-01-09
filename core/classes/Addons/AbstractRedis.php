@@ -8,47 +8,23 @@ use function AmminaISP\Core\checkDirPath;
 use function AmminaISP\Core\checkOnOff;
 use function AmminaISP\Core\isOn;
 
-set_time_limit(60);
-
-abstract class AbstractRedis
+abstract class AbstractRedis extends AbstractAddon
 {
-	public string $xml = '';
 	public string $settingsFile = '/usr/local/mgr5/etc/amminaisp/redis.ini';
 	public string $templateFileName = '/usr/local/mgr5/etc/templates/amminaisp/redis.template';
 	public string $redisOptionsFile = '/etc/redis/redis.conf';
-	public string $dataAppend = '';
 
 	public string $redisRun = '/var/run/redis';
 	public string $redisUser = 'redis';
 
-	function __construct()
+	public function __construct()
 	{
+		parent::__construct();
 		if (!file_exists($this->redisRun)) {
 			mkdir($this->redisRun, 0755);
 			chown($this->redisRun, $this->redisUser);
 		}
 		checkDirPath($this->settingsFile);
-		$this->xml = '';
-		while (!feof(STDIN)) {
-			$this->xml .= fread(STDIN, 10000);
-		}
-	}
-
-	/**
-	 * Выполнение функции плагина
-	 * @return void
-	 */
-	public function run(): void
-	{
-		if (isset($_SERVER['PARAM_ammina_memorylimit']) && isset($_SERVER['PARAM_sok']) && $_SERVER['PARAM_sok'] == "ok") {
-			$this->saveForm();
-		} else {
-			$this->openForm();
-		}
-		if (strlen($this->dataAppend) > 0) {
-			$this->xml = str_replace('</doc>', $this->dataAppend . '</doc>', $this->xml);
-		}
-		echo $this->xml;
 	}
 
 	/**
@@ -65,10 +41,9 @@ abstract class AbstractRedis
 		if (!is_array($data)) {
 			$data = [];
 		}
-
-		$this->dataAppend .= '<ammina_memorylimit>' . ($data['memorylimit'] ?? 128) . '</ammina_memorylimit>';
-		$this->dataAppend .= '<ammina_databases>' . ($data['databases'] ?? 16) . '</ammina_databases>';
-		$this->dataAppend .= '<ammina_issocket>' . boolToFlag((bool)($data['issocket'] ?? true)) . '</ammina_issocket>';
+		$this->dataAppend['ammina_memorylimit'] = ($data['memorylimit'] ?? 128);
+		$this->dataAppend['ammina_databases'] = ($data['databases'] ?? 16);
+		$this->dataAppend['ammina_issocket'] = boolToFlag((bool)($data['issocket'] ?? true));
 	}
 
 	public function saveForm(): void
@@ -79,13 +54,9 @@ abstract class AbstractRedis
 		$content[] = 'databases = ' . (int)$_SERVER['PARAM_ammina_databases'];
 		$content[] = 'issocket = ' . (isOn($_SERVER['PARAM_ammina_issocket']) ? 1 : 0);
 		file_put_contents($this->settingsFile, implode("\n", $content));
-		$params = [];
-		$params[] = '<ammina_memorylimit>' . (int)$_SERVER['PARAM_ammina_memorylimit'] . '</ammina_memorylimit>';
-		$params[] = '<ammina_databases>' . (int)$_SERVER['PARAM_ammina_databases'] . '</ammina_databases>';
-		$params[] = '<ammina_issocket>' . checkOnOff($_SERVER['PARAM_ammina_issocket']) . '</ammina_issocket>';
-		if (!empty($params)) {
-			$this->dataAppend .= implode("", $params);
-		}
+		$this->dataAppend['ammina_memorylimit'] = (int)$_SERVER['PARAM_ammina_memorylimit'];
+		$this->dataAppend['ammina_databases'] = (int)$_SERVER['PARAM_ammina_databases'];
+		$this->dataAppend['ammina_issocket'] = checkOnOff($_SERVER['PARAM_ammina_issocket']);
 
 		$templateReplace = [
 			"AMMINA_MAXMEMORY" => (int)$_SERVER['PARAM_ammina_memorylimit'] . "mb",

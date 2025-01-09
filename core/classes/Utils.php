@@ -74,4 +74,12 @@ class Utils
 		}
 		return ltrim($path, DIRECTORY_SEPARATOR);
 	}
+
+	public static function idn_to_ascii(string $value): string
+	{
+		if (function_exists("idn_to_ascii")) {
+			$value = idn_to_ascii($value);
+		}
+		return $value;
+	}
 }

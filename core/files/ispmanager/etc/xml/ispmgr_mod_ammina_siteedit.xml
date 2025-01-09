@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mgrdata>
+    <handler name="ammina_siteedit.sh" type="xml">
+        <event name="site.edit" after="yes"/>
+    </handler>
+    <metadata name="site.edit" type="form">
+        <form>
+            <page name="mainsettings">
+                <field name="use_php">
+                    <input type="hidden" name="use_php">
+                        <if value="off" hide="platform"/>
+                        <if value="off" hide="bitrix_settings"/>
+                        <if value="off" hide="bitrix_operation"/>
+                        <if value="off" hide="bitrix_modules"/>
+                        <if value="off" hide="laravel_settings"/>
+                        <if value="off" hide="seo_settings"/>
+                    </input>
+                </field>
+                <field name="platform" base="yes">
+                    <select name="platform" type="radio">
+                        <if value="default" hide="bitrix_settings"/>
+                        <if value="default" hide="bitrix_operation"/>
+                        <if value="default" hide="bitrix_modules"/>
+                        <if value="default" hide="laravel_settings"/>
+                        <if value="default" hide="seo_settings"/>
+
+                        <if value="laravel" hide="site_redirect_www"/>
+                        <if value="laravel" hide="site_redirect_http"/>
+                        <if value="laravel" hide="database"/>
+                        <if value="laravel" hide="site_script_selector"/>
+                        <if value="laravel" hide="site_phpcomposer"/>
+                        <if value="laravel" hide="bitrix_settings"/>
+                        <if value="laravel" hide="bitrix_operation"/>
+                        <if value="laravel" hide="bitrix_modules"/>
+
+                        <if value="bitrix" hide="site_redirect_www"/>
+                        <if value="bitrix" hide="site_redirect_http"/>
+                        <if value="bitrix" hide="database"/>
+                        <if value="bitrix" hide="site_script_selector"/>
+                        <if value="bitrix" hide="site_phpcomposer"/>
+                        <if value="bitrix" hide="laravel_settings"/>
+
+                    </select>
+                </field>
+            </page>
+            <page name="laravel_settings">
+                <field name="laravel_settings_note" noname="yes" fullwith="yes">
+                    <textdata type="msg" name="laravel_settings_note"/>
+                </field>
+            </page>
+            <page name="bitrix_settings">
+                <field name="bitrix_settings_note" noname="yes" fullwith="yes">
+                    <textdata type="msg" name="bitrix_settings_note"/>
+                </field>
+                <field name="bitrix_settings_20100">
+                    <input type="checkbox" name="bitrix_settings_20100"/>
+                </field>
+                <field name="bitrix_settings_b24">
+                    <input type="checkbox" name="bitrix_settings_b24">
+                        <if value="on" hide="bitrix_settings_composite" shadow="yes"/>
+                        <if value="off" hide="bitrix_settings_pushserver" shadow="yes"/>
+                        <if value="on" hide="bitrix_modules_ammina_optimizer" shadow="yes"/>
+                        <if value="on" hide="bitrix_modules_ammina_regions" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_settings_pushserver">
+                    <input type="checkbox" name="bitrix_settings_pushserver"/>
+                </field>
+                <field name="bitrix_settings_composite" remove_if="new">
+                    <input type="checkbox" name="bitrix_settings_composite">
+                        <if value="on" hide="bitrix_settings_b24" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_settings_multisite">
+                    <input type="checkbox" name="bitrix_settings_multisite">
+                        <if value="off" hide="bitrix_settings_multisite_main"/>
+
+                        <if value="on" hide="bitrix_modules_ammina_backup" shadow="yes"/>
+                        <if value="on" hide="bitrix_operation_make_cron" shadow="yes"/>
+                        <if value="on" hide="bitrix_operation_make_database" shadow="yes"/>
+                        <if value="on" hide="bitrix_operation_make_database_name"/>
+                        <if value="on" hide="bitrix_operation_make_skeleton" shadow="yes"/>
+                        <if value="on" hide="bitrix_operation_make_cache_memcached" shadow="yes"/>
+                        <if value="on" hide="bitrix_operation_make_cache_redis" shadow="yes"/>
+                        <if value="on" hide="bitrix_operation_make_errorlog" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_settings_multisite_main">
+                    <select name="bitrix_settings_multisite_main"/>
+                </field>
+                <field name="bitrix_settings_composer">
+                    <input type="checkbox" name="bitrix_settings_composer"/>
+                </field>
+            </page>
+            <page name="bitrix_operation">
+                <field name="bitrix_operation_note" noname="yes" fullwith="yes">
+                    <textdata type="msg" name="bitrix_operation_note"/>
+                </field>
+                <field name="bitrix_operation_make_cron" remove_if="new">
+                    <input type="checkbox" name="bitrix_operation_make_cron"/>
+                </field>
+                <field name="bitrix_operation_make_cache_memcached" remove_if="new">
+                    <input type="checkbox" name="bitrix_operation_make_cache_memcached">
+                        <if value="on" hide="bitrix_operation_make_cache_redis" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_operation_make_cache_redis" remove_if="new">
+                    <input type="checkbox" name="bitrix_operation_make_cache_redis">
+                        <if value="on" hide="bitrix_operation_make_cache_memcached" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_operation_make_errorlog" remove_if="new">
+                    <input type="checkbox" name="bitrix_operation_make_errorlog"/>
+                </field>
+                <field name="bitrix_operation_make_skeleton" remove_if="edit">
+                    <input type="checkbox" name="bitrix_operation_make_skeleton"/>
+                </field>
+                <field name="bitrix_operation_make_database" remove_if="edit">
+                    <input type="checkbox" name="bitrix_operation_make_database">
+                        <if value="off" hide="bitrix_operation_make_database_name"/>
+                    </input>
+                </field>
+                <field name="bitrix_operation_make_database_name" remove_if="edit">
+                    <input type="text" name="bitrix_operation_make_database_name"/>
+                </field>
+            </page>
+            <page name="bitrix_modules" remove_if="new">
+                <field name="bitrix_modules_note" noname="yes" fullwith="yes">
+                    <textdata type="msg" name="bitrix_modules_note"/>
+                </field>
+                <field name="bitrix_modules_ammina_optimizer">
+                    <input type="checkbox" name="bitrix_modules_ammina_optimizer">
+                        <if value="on" hide="bitrix_settings_b24" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_modules_ammina_regions">
+                    <input type="checkbox" name="bitrix_modules_ammina_regions">
+                        <if value="on" hide="bitrix_settings_b24" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="bitrix_modules_ammina_backup">
+                    <input type="checkbox" name="bitrix_modules_ammina_backup"/>
+                </field>
+            </page>
+            <page name="seo_settings" collapsed="yes">
+                <field name="seo_settings_deny_robots">
+                    <input type="checkbox" name="seo_settings_robots"/>
+                </field>
+                <field name="seo_settings_https">
+                    <input type="checkbox" name="seo_settings_https"/>
+                </field>
+                <field name="seo_settings_www">
+                    <input type="checkbox" name="seo_settings_www">
+                        <if value="on" hide="seo_settings_nowww" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="seo_settings_nowww">
+                    <input type="checkbox" name="seo_settings_nowww">
+                        <if value="on" hide="seo_settings_www" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="seo_settings_slash">
+                    <input type="checkbox" name="seo_settings_slash">
+                        <if value="on" hide="seo_settings_noslash" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="seo_settings_noslash">
+                    <input type="checkbox" name="seo_settings_noslash">
+                        <if value="on" hide="seo_settings_slash" shadow="yes"/>
+                    </input>
+                </field>
+                <field name="seo_settings_noindex">
+                    <input type="checkbox" name="seo_settings_noindex"/>
+                </field>
+                <field name="seo_settings_nomultislash">
+                    <input type="checkbox" name="seo_settings_nomultislash"/>
+                </field>
+            </page>
+        </form>
+        <summary>
+            <page name="bxsettings" img="gear_s">
+                <label name="bitrix_settings_note"/>
+            </page>
+        </summary>
+    </metadata>
+    <lang name="ru">
+        <messages name="site.edit">
+            <msg name="platform">Платформа сайта</msg>
+            <msg name="hint_platform">Укажите, на какой платформе работает сайт. В зависимости от этого будут доступны разные настройки.</msg>
+            <msg name="platform_default">Не использовать дополнительные настройки</msg>
+            <msg name="platform_laravel">Laravel (фреймворк)</msg>
+            <msg name="platform_bitrix">1С-Битрикс</msg>
+
+
+            <msg name="laravel_settings">Настройка сайта Laravel</msg>
+            <msg name="laravel_settings_note">Настройка WWW-домена для работы с Laravel.</msg>
+
+
+            <msg name="bitrix_settings">Настройка сайта 1C-Bitrix</msg>
+            <msg name="bitrix_settings_note">Настройка WWW-домена для работы с 1С-Битрикс: Управление сайтом или 1С-Битрикс: Корпоративный портал (в т.ч. CRM+Интернет-магазин).<br/>Обязательно включите в разделе "Оптимизация и защита от DDoS" настроек (выше) "Настроить сжатие", "Уровень сжатия" со значением от 5 до 7, "Настроить кеширование", "Период кеширования" со значением "неограничено".
+            </msg>
+            <msg name="bitrix_settings_20100">Главный модуль 1С-Битрикс версии ниже 20.100</msg>
+            <msg name="hint_bitrix_settings_20100">Главный модуль 1С-Битрикс версии ниже 20.100 для кодировки UTF-8 требует параметр mbstring.func_overload = 2. Для новых версий 1С-Битрикс mbstring.func_overload = 0</msg>
+            <msg name="bitrix_settings_b24">1С-Битрикс: Корпоративный портал или CRM</msg>
+            <msg name="hint_bitrix_settings_b24">Данный сайт является коробочным корпоративным порталом, либо CRM+Интернет-магазин</msg>
+            <msg name="bitrix_settings_pushserver">Установить и настроить Push сервер битрикс</msg>
+            <msg name="hint_bitrix_settings_pushserver">Для данного сайта будет установлен и настроен push сервер</msg>
+            <msg name="bitrix_settings_composite">Композитный режим</msg>
+            <msg name="hint_bitrix_settings_composite">Сайт работает в композитном режиме</msg>
+            <msg name="bitrix_settings_multisite">Дополнительный сайт при многосайтовости</msg>
+            <msg name="hint_bitrix_settings_multisite">Данный www-домен является дополнительным сайтом для многосайтовости 1С-Битрикс
+            </msg>
+            <msg name="bitrix_settings_multisite_main">-- основной сайт для мультисайтовости</msg>
+            <msg name="hint_bitrix_settings_multisite_main">Какой сайт является основным при мультисайтовости (содержит папки bitrix, upload, local)
+            </msg>
+            <msg name="bitrix_settings_composer">PHP Composer для Битрикс</msg>
+            <msg name="hint_bitrix_settings_composer">Установить в папку сайта PHP Composer</msg>
+
+
+            <msg name="bitrix_operation">Операции с сайтом 1C-Bitrix</msg>
+            <msg name="bitrix_operation_note">В данном разделе выполняются различные операции с 1С-Битрикс. Значения не сохраняются. Для выполнения операции выделите галочкой нужные действия и сохраните настройки домена.</msg>
+            <msg name="bitrix_operation_make_cron">Настроить агентов для выполнения на Cron</msg>
+            <msg name="hint_bitrix_operation_make_cron">Создание файлов и задания для выполнения агентов на Cron</msg>
+            <msg name="bitrix_operation_make_cache_memcached">Настроить кэш сайта на Memcached</msg>
+            <msg name="hint_bitrix_operation_make_cache_memcached">Создать настройки кеширования сайта при помощи сервиса Memcached</msg>
+            <msg name="bitrix_operation_make_cache_redis">Настроить кэш сайта на Redis</msg>
+            <msg name="hint_bitrix_operation_make_cache_redis">Создать настройки кеширования сайта при помощи сервиса Redis</msg>
+            <msg name="bitrix_operation_make_errorlog">Настроить логирование 1С-Битрикс</msg>
+            <msg name="hint_bitrix_operation_make_errorlog">Создать настройки логирования ошибок 1С-Битрикс</msg>
+            <msg name="bitrix_operation_make_skeleton">Загрузить файлы для установки или восстановления из бэкапа</msg>
+            <msg name="hint_bitrix_operation_make_skeleton">Загрузка файлов в корневую папку сайта для установки или восстановления из бэкапа 1С-Битрикс. Применяйте данную функцию только для новых www-доменов (либо если каталог домена пуст)</msg>
+            <msg name="bitrix_operation_make_database">Создать базу данных и пользователя базы данных</msg>
+            <msg name="hint_bitrix_operation_make_database">Создание базы данных и пользователя базы данных, а так же сохранение настроек для базы данных в конфигурационных файлах 1С-Битрикс</msg>
+            <msg name="bitrix_operation_make_database_name">Название базы данных</msg>
+            <msg name="hint_bitrix_operation_make_database_name">Укажите название базы данных, либо оставьте поле пустым для автоматического именования базы данных</msg>
+
+
+            <msg name="bitrix_modules">Настройки модулей Ammina для 1С-Битрикс</msg>
+            <msg name="bitrix_modules_note">Укажите, какие модули &lt;a href="https://marketplace.1c-bitrix.ru/partners/detail.php?ID=7860645.php" target="_blank"&gt;Ammina&lt;/a&gt; используются на данном сайте.</msg>
+            <msg name="bitrix_modules_ammina_optimizer">Модуль Ammina Optimizer: Оптимизация и ускорение загрузки сайта</msg>
+            <msg name="hint_bitrix_modules_ammina_optimizer">Сайт использует модуль ускорения загрузки и оптимизации Ammina Optimizer: Оптимизация и ускорение загрузки сайта (CSS, JS, HTML, изображения, WebP, Lazy)</msg>
+            <msg name="bitrix_modules_ammina_regions">Модуль Ammina. Регионы</msg>
+            <msg name="hint_bitrix_modules_ammina_regions">Сайт использует модуль мультирегиональности Ammina. Регионы (филиалы и представительства)</msg>
+            <msg name="bitrix_modules_ammina_backup">Модуль Ammina: Резервное копирование</msg>
+            <msg name="hint_bitrix_modules_ammina_backup">Сайт использует модуль резервного копирования Ammina: Резервное копирование (Яндекс диск, FTP, Dropbox, Mail.ru)</msg>
+
+
+            <msg name="seo_settings">Настройки SEO</msg>
+            <msg name="seo_settings_deny_robots">Заблокировать поисковых роботов</msg>
+            <msg name="hint_seo_settings_deny_robots">Блокировка доступа на сайт для поисковых роботов со статусом 403, а также блокировка в файле robots.txt (подмена существующего файла robots.txt без его изменения)</msg>
+            <msg name="seo_settings_https">Редирект на https</msg>
+            <msg name="hint_seo_settings_https">http://example.org -> https://example.org</msg>
+            <msg name="seo_settings_www">Редирект на www</msg>
+            <msg name="hint_seo_settings_www">example.org -> www.example.org</msg>
+            <msg name="seo_settings_nowww">Редирект на без www</msg>
+            <msg name="hint_seo_settings_nowww">www.example.org -> example.org</msg>
+            <msg name="seo_settings_slash">Редирект на страницу со слешем</msg>
+            <msg name="hint_seo_settings_slash">/catalog -> /catalog/</msg>
+            <msg name="seo_settings_noslash">Редирект на страницу без слеша</msg>
+            <msg name="hint_seo_settings_noslash">/catalog/ -> /catalog</msg>
+            <msg name="seo_settings_noindex">Редирект на страницу без index.php</msg>
+            <msg name="hint_seo_settings_noindex">/catalog/index.php -> /catalog/</msg>
+            <msg name="seo_settings_nomultislash">Удаление множественных слешей</msg>
+            <msg name="hint_seo_settings_nomultislash">/catalog///category//product.html -> /catalog/category/product.html</msg>
+
+        </messages>
+    </lang>
+</mgrdata>
