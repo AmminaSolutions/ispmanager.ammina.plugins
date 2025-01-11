@@ -10,12 +10,12 @@ use function AmminaISP\Core\isOn;
 
 abstract class AbstractRedis extends AbstractAddon
 {
-	public string $settingsFile = '/usr/local/mgr5/etc/amminaisp/redis.ini';
 	public string $templateFileName = '/usr/local/mgr5/etc/templates/amminaisp/redis.template';
 	public string $redisOptionsFile = '/etc/redis/redis.conf';
 
 	public string $redisRun = '/var/run/redis';
 	public string $redisUser = 'redis';
+	public ?string $settingsFile = 'redis.ini';
 
 	public function __construct()
 	{
@@ -24,7 +24,6 @@ abstract class AbstractRedis extends AbstractAddon
 			mkdir($this->redisRun, 0755);
 			chown($this->redisRun, $this->redisUser);
 		}
-		checkDirPath($this->settingsFile);
 	}
 
 	/**
@@ -34,26 +33,20 @@ abstract class AbstractRedis extends AbstractAddon
 	 */
 	public function openForm(): void
 	{
-		$data = [];
-		if (file_exists($this->settingsFile)) {
-			$data = parse_ini_file($this->settingsFile);
-		}
-		if (!is_array($data)) {
-			$data = [];
-		}
-		$this->dataAppend['ammina_memorylimit'] = ($data['memorylimit'] ?? 128);
-		$this->dataAppend['ammina_databases'] = ($data['databases'] ?? 16);
-		$this->dataAppend['ammina_issocket'] = boolToFlag((bool)($data['issocket'] ?? true));
+		$this->dataAppend['ammina_memorylimit'] = $this->fromIni('memorylimit', 128);
+		$this->dataAppend['ammina_databases'] = $this->fromIni('databases', 16);
+		$this->dataAppend['ammina_issocket'] = $this->fromIniFlag('issocket', true);
 	}
 
 	public function saveForm(): void
 	{
 		@exec("service redis stop");
-		$content = [];
-		$content[] = 'memorylimit = ' . (int)$_SERVER['PARAM_ammina_memorylimit'];
-		$content[] = 'databases = ' . (int)$_SERVER['PARAM_ammina_databases'];
-		$content[] = 'issocket = ' . (isOn($_SERVER['PARAM_ammina_issocket']) ? 1 : 0);
-		file_put_contents($this->settingsFile, implode("\n", $content));
+		$this
+			->setIni('memorylimit', (int)$_SERVER['PARAM_ammina_memorylimit'])
+			->setIni('databases', (int)$_SERVER['PARAM_ammina_databases'])
+			->setIniFlag('issocket', $_SERVER['PARAM_ammina_issocket'])
+			->saveIni();
+
 		$this->dataAppend['ammina_memorylimit'] = (int)$_SERVER['PARAM_ammina_memorylimit'];
 		$this->dataAppend['ammina_databases'] = (int)$_SERVER['PARAM_ammina_databases'];
 		$this->dataAppend['ammina_issocket'] = checkOnOff($_SERVER['PARAM_ammina_issocket']);

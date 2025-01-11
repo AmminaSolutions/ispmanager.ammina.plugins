@@ -1,0 +1,160 @@
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	ssl_certificate [% $SSL_CRT_BUNDLE_PATH %];
+	ssl_certificate_key [% $SSL_KEY_PATH %];
+	ssl_ciphers EECDH:+AES256:-3DES:RSA+AES:!NULL:!RC4;
+	ssl_prefer_server_ciphers on;
+	ssl_protocols [% $SSL_SECURE_PROTOCOLS %];
+{% if $HSTS == on %}
+	add_header Strict-Transport-Security "max-age=31536000;";
+{% endif %}
+{% if $SSL_DHPARAM == 2048 %}
+	ssl_dhparam /etc/ssl/certs/dhparam2048.pem;
+{% elif $SSL_DHPARAM == 4096 %}
+	ssl_dhparam /etc/ssl/certs/dhparam4096.pem;
+{% endif %}
+	charset [% $CHARSET %];
+{% if $DIRINDEX != "" %}
+	index [% $DIRINDEX %];
+{% endif %}
+	disable_symlinks if_not_owner from=$root_path;
+	include {% $NGINX_VHOST_INCLUDES %};
+	include {% $INCLUDE_RESOURCE_PATH %};
+{% if $PAGESPEED == on %}
+        include {% $NGINX_MODULE_PAGESPEED_PATH %};
+{% endif %}
+{% if $PHPCOMPOSER == on %}
+        include {% $NGINX_MODULE_PHPCOMPOSER_PATH %};
+{% endif %}
+{% if $LOG_ACCESS == on %}
+	access_log [% $ACCESS_LOG_PATH %];
+{% elif $NO_TRAFF_COUNT == on %}
+	access_log off;
+{% endif %}
+{% if $LOG_ERROR == on %}
+	error_log {% $ERROR_LOG_PATH %} notice;
+{% else %}
+	error_log /dev/null crit;
+{% endif %}
+{% if $SSI == on %}
+	ssi on;
+{% endif %}
+{% if $REDIRECT_WWW == to_www %}
+	if ($host = {% $NAME %}) {
+		return 301 https://www.{% $NAME %}$request_uri;
+	}
+{% elif $REDIRECT_WWW == from_www %}
+	if ($host = www.{% $NAME %}) {
+		return 301 https://{% $NAME %}$request_uri;
+	}
+{% endif %}
+	set $root_path {% $VIRTUAL_DOCROOT %};
+{% if $AUTOSUBDOMAIN != off and $AUTOSUBDOMAIN != "" %}
+{% if $AUTOSUBDOMAIN == autosubdomain_subdir %}
+	set $subdomain "";
+{% elif $AUTOSUBDOMAIN == autosubdomain_dir %}
+		set $subdomain {% $AUTOSUBDOMAIN_SUBDOMAIN_PART %};
+{% endif %}
+	if ($host ~* ^((.*).{% $NAME %})$) {
+{% if $AUTOSUBDOMAIN == autosubdomain_dir %}
+		set $subdomain $1;
+{% elif $AUTOSUBDOMAIN == autosubdomain_subdir %}
+		set $subdomain $2;
+{% endif %}
+	}
+	root $root_path/$subdomain;
+{% else %}
+	root $root_path;
+{% endif %}
+	listen {% $NGINX_SSL_LISTEN_ON %} [% $LISTEN_SSL_FLAGS %];
+{% if $USER_RESOURCES %}
+	include {% $USER_NGINX_RESOURCES_PATH %};
+{% endif %}
+{% if $SRV_GZIP == on %}
+	gzip on;
+	gzip_comp_level [% $GZIP_LEVEL %];
+	gzip_disable "msie6";
+	gzip_types [% $GZIP_TYPES %];
+{% endif %}
+{% if THIS_BLOCK_FOR_REMOVE_EXPIRES %}
+	expires [% $EXPIRES_VALUE %];
+{% endif %}
+	location / {
+{% if $PHP == on %}
+{% if $SEMANTIC_URL == on and $PHP_MODE == php_mode_fcgi_nginxfpm %}
+		try_files $uri $uri/ /index.php?$args;
+{% endif %}
+		location ~ [^/]\.ph(p\d*|tml)$ {
+{% if $PHP_MODE == php_mode_fcgi_nginxfpm %}
+			try_files /does_not_exists @php;
+{% else %}
+			try_files /does_not_exists @fallback;
+{% endif %}
+		}
+{% endif %}
+		location ~* ^.+\.({% $NGINX_STATIC %})$ {
+{% if $SRV_CACHE == on %}
+			expires [% $EXPIRES_VALUE %];
+{% endif %}
+{% if $REDIRECT_TO_APACHE == on %}
+			try_files $uri $uri/ @fallback;
+{% endif %}
+		}
+{% if $REDIRECT_TO_APACHE == on %}
+		location / {
+			try_files /does_not_exists @fallback;
+		}
+{% endif %}
+	}
+{% if $ANALYZER != off and $ANALYZER != "" %}
+	location {% $WEBSTAT_LOCATION %} {
+		charset [% $WEBSTAT_ENCODING %];
+		index index.html;
+{% if $PHP == on %}
+		location ~ [^/]\.ph(p\d*|tml)$ {
+{% if $PHP_MODE == php_mode_fcgi_nginxfpm %}
+			try_files /does_not_exists @php;
+{% else %}
+			try_files /does_not_exists @fallback;
+{% endif %}
+		}
+{% endif %}
+{% if $REDIRECT_TO_APACHE == on %}
+		location ~* ^.+\.({% $NGINX_STATIC %})$ {
+{% if $SRV_CACHE == on %}
+			expires [% $EXPIRES_VALUE %];
+{% endif %}
+			try_files $uri $uri/ @fallback;
+		}
+		location {% $WEBSTAT_LOCATION %} {
+			try_files /does_not_exists @fallback;
+		}
+{% endif %}
+	}
+{% endif %}
+{% if $REDIRECT_TO_APACHE == on %}
+	location @fallback {
+		include {% $INCLUDE_DYNAMIC_RESOURCE_PATH %};
+		proxy_pass {% $BACKEND_BIND_URI %};
+		proxy_redirect {% $BACKEND_BIND_URI %} /;
+		proxy_set_header Host $host;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+		proxy_set_header X-Forwarded-Port $server_port;
+{% if $NO_TRAFF_COUNT == on %}
+		access_log off;
+{% endif %}
+	}
+{% endif %}
+{% if $REDIRECT_TO_PHPFPM == on %}
+	location @php {
+		include {% $INCLUDE_DYNAMIC_RESOURCE_PATH %};
+		fastcgi_index index.php;
+		fastcgi_param PHP_ADMIN_VALUE "sendmail_path = /usr/sbin/sendmail -t -i -f {% $EMAIL %}";
+		fastcgi_pass {% $PHPFPM_USER_SOCKET_PATH %};
+		fastcgi_split_path_info ^((?U).+\.ph(?:p\d*|tml))(/?.+)$;
+		try_files $uri =404;
+		include fastcgi_params;
+	}
+{% endif %}
+}

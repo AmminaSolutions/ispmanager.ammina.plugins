@@ -1,0 +1,12 @@
+<VirtualHost {% $LISTEN_ON %}>
+{% if $BITRIX_SETTINGS_B24 == on %}
+	ServerName bx2.ru
+{% endif %}
+{% if $ALIASES != "" %}
+	ServerAlias [% $ALIASES %]
+{% endif %}
+ServerAlias {% $PLATFORM %}.com
+ServerAlias {% $BITRIX_SETTINGS_COMPOSER %}-bitrix_settings_composer.com
+    DocumentRoot {% $DOCROOT %}
+
+</VirtualHost>

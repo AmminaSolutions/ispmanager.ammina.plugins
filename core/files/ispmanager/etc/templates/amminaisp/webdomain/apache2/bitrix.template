@@ -1,0 +1,8 @@
+<VirtualHost {% $LISTEN_ON %}>
+	ServerName {% $PLATFORM_BITRIX %}{% $NAME %}
+{% if $ALIASES != "" %}
+	ServerAlias [% $ALIASES %]
+{% endif %}
+    DocumentRoot {% $DOCROOT %}
+
+</VirtualHost>

@@ -1,0 +1,152 @@
+<VirtualHost {% $LISTEN_ON %}>
+	ServerName {% $NAME %}
+{% if $ALIASES != "" %}
+	ServerAlias [% $ALIASES %]
+{% endif %}
+{% if $NGINX_FOREGROUND %}
+	ServerAlias {% $IPADDRS %}
+{% endif %}
+	DocumentRoot [% $DOCROOT %]
+	ServerAdmin [% $EMAIL %]
+{% if $DIRINDEX != "" %}
+	DirectoryIndex [% $DIRINDEX %]
+{% endif %}
+	AddDefaultCharset [% $CHARSET %]
+{% if $APACHEITK == on %}
+	AssignUserID {% $OWNER %} {% $OWNER_GROUP %}
+{% else %}
+	SuexecUserGroup {% $OWNER %} {% $OWNER_GROUP %}
+{% endif %}
+{% if $LOG_ACCESS == on %}
+	CustomLog {% $ACCESS_LOG_PATH %} combined
+{% else %}
+	CustomLog /dev/null combined
+{% endif %}
+{% if $LOG_ERROR == on %}
+	ErrorLog {% $ERROR_LOG_PATH %}
+{% else %}
+	ErrorLog /dev/null
+{% endif %}
+{% if $CGI == on %}
+	ScriptAlias /cgi-bin/ {% $CGI_EXT_PATH %}
+{% endif %}
+{% if $PAGESPEED == on %}
+	<IfModule pagespeed_module>
+		ModPagespeed on
+	</IfModule>
+{% endif %}
+{% if $PHPCOMPOSER == on %}
+	IncludeOptional {% $APACHE_MODULE_PHPCOMPOSER_PATH %}
+{% endif %}
+{% if $PYTHON == on %}
+	IncludeOptional {% $APACHE_MODULE_PYTHON_PATH %}
+{% endif %}
+{% if $INCLUDE %}
+	Include {% $INCLUDE %}
+{% endif %}
+{% if $USE_RESOURCES == on %}
+	Include {% $INCLUDE_PHP %}
+{% endif %}
+{% if $PHP == on and $FILES_MATCH == on %}
+	<FilesMatch "\.ph(p[3-5]?|tml)$">
+		SetHandler [% $PHP_HANDLER %]
+{% if $APACHE_FCGID == on and $PHP_MODE == php_mode_fcgi_apache %}
+		FCGIWrapper [% $PHP_BIN_WRAPPER %]
+{% endif %}
+	</FilesMatch>
+{% endif %}
+{% if $PHP_MODE == php_mode_mod %}
+	<FilesMatch "\.phps$">
+		SetHandler application/x-httpd-php-source
+	</FilesMatch>
+{% if $ISP_CUT %}
+	php_admin_value sendmail_path "/usr/sbin/sendmail -t -i -f {% $EMAIL %}"
+	php_admin_value upload_tmp_dir "{% $MOD_TMP_PATH %}"
+	php_admin_value session.save_path "{% $MOD_TMP_PATH %}"
+	php_admin_value open_basedir "{% $BASEDIR_PATH %}"
+{% endif %}
+	<IfModule php5_module>
+{% if $USER_PHP_CONF %}
+		Include {% $USER_PHP_CONF %}
+{% endif %}
+{% if $SITE_PHP_CONF %}
+		Include {% $SITE_PHP_CONF %}
+{% endif %}
+		php_admin_value sendmail_path "/usr/sbin/sendmail -t -i -f {% $EMAIL %}"
+		php_admin_value upload_tmp_dir "{% $MOD_TMP_PATH %}"
+		php_admin_value session.save_path "{% $MOD_TMP_PATH %}"
+		php_admin_value open_basedir "{% $BASEDIR_PATH %}"
+	</IfModule>
+	<IfModule php7_module>
+{% if $USER_PHP_CONF %}
+		Include {% $USER_PHP_CONF %}
+{% endif %}
+{% if $SITE_PHP_CONF %}
+		Include {% $SITE_PHP_CONF %}
+{% endif %}
+		php_admin_value sendmail_path "/usr/sbin/sendmail -t -i -f {% $EMAIL %}"
+		php_admin_value upload_tmp_dir "{% $MOD_TMP_PATH %}"
+		php_admin_value session.save_path "{% $MOD_TMP_PATH %}"
+		php_admin_value open_basedir "{% $BASEDIR_PATH %}"
+	</IfModule>
+	<IfModule php_module>
+{% if $USER_PHP_CONF %}
+		Include {% $USER_PHP_CONF %}
+{% endif %}
+{% if $SITE_PHP_CONF %}
+		Include {% $SITE_PHP_CONF %}
+{% endif %}
+		php_admin_value sendmail_path "/usr/sbin/sendmail -t -i -f {% $EMAIL %}"
+		php_admin_value upload_tmp_dir "{% $MOD_TMP_PATH %}"
+		php_admin_value session.save_path "{% $MOD_TMP_PATH %}"
+		php_admin_value open_basedir "{% $BASEDIR_PATH %}"
+	</IfModule>
+{% elif $PHP_MODE == php_mode_lsapi %}
+	<FilesMatch "\.phps$">
+		SetHandler application/x-httpd-php-source
+	</FilesMatch>
+{% if $ISP_CUT %}
+	php_admin_value sendmail_path "/usr/sbin/sendmail -t -i -f {% $EMAIL %}"
+	php_admin_value upload_tmp_dir "{% $MOD_TMP_PATH %}"
+	php_admin_value session.save_path "{% $MOD_TMP_PATH %}"
+	php_admin_value open_basedir "{% $BASEDIR_PATH %}"
+{% endif %}
+	<IfModule lsapi_module>
+		php_admin_value sendmail_path "/usr/sbin/sendmail -t -i -f {% $EMAIL %}"
+		php_admin_value upload_tmp_dir "{% $MOD_TMP_PATH %}"
+		php_admin_value session.save_path "{% $MOD_TMP_PATH %}"
+		php_admin_value open_basedir "{% $BASEDIR_PATH %}"
+	</IfModule>
+{% elif $PHP_MODE == php_mode_cgi %}
+	ScriptAlias /php-bin/ [% $PHP_BIN_DIR %]
+	AddHandler application/x-httpd-php5 .php .php3 .php4 .php5 .phtml
+	Action application/x-httpd-php5 /php-bin/php
+{% elif $PHP_MODE == php_mode_fcgi_apache and $APACHE_FCGID != on %}
+	AddType application/x-httpd-fastphp .php .php3 .php4 .php5 .phtml
+	Alias /php-fcgi/ [% $PHP_BIN_DIR %]
+{% endif %}
+{% if $PYTHON_MODE == python_mode_cgi %}
+	ScriptAlias /python-bin/ [% $PYTHON_BIN_DIR %]
+	AddHandler application/x-httpd-python .py
+	Action application/x-httpd-python /python-bin/python
+	<FilesMatch "\.py$">
+		SetHandler application/x-httpd-python
+	</FilesMatch>
+{% endif %}
+{% if $VIRTUAL_DOCROOT == on %}
+	VirtualDocumentRoot [% $VIRTUAL_DOCROOT_PATH %]
+{% endif %}
+{%if $NGINX_FRONTEND == on %}
+	SetEnvIf X-Forwarded-Proto https HTTPS=on
+{% else %}
+{% if $REDIRECT_WWW == to_www %}
+	RewriteEngine on
+	RewriteCond %{HTTP_HOST} "={% $NAME %}" [NC]
+	RewriteRule ^(.*)$ http://www.{% $NAME %}%{REQUEST_URI} [R=301,L]
+{% elif $REDIRECT_WWW == from_www %}
+	RewriteEngine on
+	RewriteCond %{HTTP_HOST} "=www.{% $NAME %}" [NC]
+	RewriteRule ^(.*)$ http://{% $NAME %}%{REQUEST_URI} [R=301,L]
+{% endif %}
+{% endif %}
+</VirtualHost>

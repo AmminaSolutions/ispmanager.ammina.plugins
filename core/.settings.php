@@ -12,6 +12,9 @@ return [
 	'ispmanager' => [
 		'path nginx-gzip-types' => 'text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/javascript image/svg+xml',
 		'DomainTTL' => '300',
+		'Option' => [
+			'ForceEnableNewSiteForm',
+		],
 	],
 	'features' => [
 		'web' => [

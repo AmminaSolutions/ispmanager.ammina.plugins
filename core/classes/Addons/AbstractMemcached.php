@@ -10,11 +10,12 @@ use function AmminaISP\Core\isOn;
 
 abstract class AbstractMemcached extends AbstractAddon
 {
-	public string $settingsFile = '/usr/local/mgr5/etc/amminaisp/memcached.ini';
+
 	public string $templateFileName = '/usr/local/mgr5/etc/templates/amminaisp/memcached.template';
 	public string $redisOptionsFile = '/etc/memcached.conf';
 	public string $memcachedRun = '/var/run/memcached';
 	public string $memcachedUser = 'memcache';
+	public ?string $settingsFile = 'memcached.ini';
 
 	public function __construct()
 	{
@@ -23,7 +24,6 @@ abstract class AbstractMemcached extends AbstractAddon
 			mkdir($this->memcachedRun, 0755);
 			chown($this->memcachedRun, $this->memcachedUser);
 		}
-		checkDirPath($this->settingsFile);
 	}
 
 	/**
@@ -33,26 +33,19 @@ abstract class AbstractMemcached extends AbstractAddon
 	 */
 	public function openForm(): void
 	{
-		$data = [];
-		if (file_exists($this->settingsFile)) {
-			$data = parse_ini_file($this->settingsFile);
-		}
-		if (!is_array($data)) {
-			$data = [];
-		}
-		$this->dataAppend['ammina_cachesize'] = ($data['cachesize'] ?? 64);
-		$this->dataAppend['ammina_maxconn'] = ($data['maxconn'] ?? 1024);
-		$this->dataAppend['ammina_issocket'] = boolToFlag((bool)($data['issocket'] ?? true));
+		$this->dataAppend['ammina_cachesize'] = $this->fromIni('cachesize', 64);
+		$this->dataAppend['ammina_maxconn'] = $this->fromIni('maxconn', 1024);
+		$this->dataAppend['ammina_issocket'] = $this->fromIniFlag('issocket', true);
 	}
 
 	public function saveForm(): void
 	{
 		@exec("service memcached stop");
-		$content = [];
-		$content[] = 'cachesize = ' . (int)$_SERVER['PARAM_ammina_cachesize'];
-		$content[] = 'maxconn = ' . (int)$_SERVER['PARAM_ammina_maxconn'];
-		$content[] = 'issocket = ' . (isOn($_SERVER['PARAM_ammina_issocket']) ? 1 : 0);
-		file_put_contents($this->settingsFile, implode("\n", $content));
+		$this
+			->setIni('cachesize', (int)$_SERVER['PARAM_ammina_cachesize'])
+			->setIni('maxconn', (int)$_SERVER['PARAM_ammina_maxconn'])
+			->setIniFlag('issocket', $_SERVER['PARAM_ammina_issocket'])
+			->saveIni();
 		$this->dataAppend['ammina_cachesize'] = (int)$_SERVER['PARAM_ammina_cachesize'];
 		$this->dataAppend['ammina_maxconn'] = (int)$_SERVER['PARAM_ammina_maxconn'];
 		$this->dataAppend['ammina_issocket'] = checkOnOff($_SERVER['PARAM_ammina_issocket']);

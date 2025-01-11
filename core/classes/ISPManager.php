@@ -14,6 +14,7 @@ class ISPManager
 	public string $managerPath = '/usr/local/mgr5';
 
 	protected static int $maxRetryWait = 300;
+	protected static int $maxRetryFeatureWait = 2000;
 	protected array $serversMysqlList = [];
 
 	public static function getInstance(): static
@@ -506,7 +507,7 @@ class ISPManager
 	{
 		$this->messageCommandWait();
 		sleep(5);
-		$maxRetry = static::$maxRetryWait;
+		$maxRetry = static::$maxRetryFeatureWait;
 		while (true) {
 			$result = $this->command("feature");
 			$findStatus = false;
@@ -524,7 +525,7 @@ class ISPManager
 			if ($maxRetry < 0) {
 				return false;
 			}
-			sleep(1);
+			sleep(2);
 		}
 	}
 
@@ -691,10 +692,11 @@ class ISPManager
 	 * Общие настройки ISPManager
 	 * @param string $option
 	 * @param string $value
+	 * @param bool $isFlag
 	 * @param string $message
 	 * @return void
 	 */
-	public function checkConfig(string $option, string $value, string $message = ''): void
+	public function checkConfig(string $option, string $value, bool $isFlag = false, string $message = ''): void
 	{
 		$this->messageCommand($message);
 		$content = explode("\n", trim(file_get_contents("{$this->managerPath}/etc/ispmgr.conf")));
@@ -705,7 +707,7 @@ class ISPManager
 				unset($content[$k]);
 				continue;
 			}
-			if (str_starts_with($v, "{$option} ")) {
+			if ((!$isFlag && str_starts_with($v, "{$option} ")) || ($isFlag && str_starts_with($v, "{$option} {$value}"))) {
 				$finded = true;
 				$content[$k] = "{$option} {$value}";
 				break;
@@ -1064,5 +1066,42 @@ class ISPManager
 			];
 			$this->command('scheduler.edit', $params);
 		}
+	}
+
+	public function getWebdomainForBxMultisite(string $currentName): array
+	{
+		$result = [];
+		$owner = $this->getWebdomainOwner($currentName, false);
+		$data = $this->command("webdomain", []);
+		if (!is_array($data['doc']['elem'])) {
+			return [];
+		}
+		foreach ($data['doc']['elem'] as $elem) {
+			if ($elem['name']['$'] == $currentName || $elem['owner']['$'] != $owner) {
+				continue;
+			}
+			$result[] = $elem['name']['$'];
+		}
+		return $result;
+	}
+
+	public function getWebdomainOwner(string $currentName, bool $checkParam = true): ?string
+	{
+		if ($checkParam) {
+			$owner = $_SERVER['PARAM_site_owner'] ?? null;
+			if (!is_null($owner)) {
+				return $owner;
+			}
+		}
+		$data = $this->command("webdomain", []);
+		if (!is_array($data['doc']['elem'])) {
+			return null;
+		}
+		foreach ($data['doc']['elem'] as $elem) {
+			if ($elem['name']['$'] == $currentName) {
+				return $elem['owner']['$'];
+			}
+		}
+		return null;
 	}
 }

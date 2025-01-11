@@ -181,7 +181,16 @@ abstract class AbstractInstaller
 	{
 		Console::showColoredString("Проверяем конфиг ISPManager", 'light_green', null, true);
 		foreach (Settings::getInstance()->get("ispmanager") as $option => $value) {
-			ISPManager::getInstance()->checkConfig($option, $value, "Настройка ISPManager: {$option} -> {$value}");
+			if ($option === 'Option') {
+				if (!is_array($value)) {
+					$value = [$value];
+				}
+				foreach ($value as $val) {
+					ISPManager::getInstance()->checkConfig($option, $val, true, "Настройка ISPManager: {$option} {$val}");
+				}
+			} else {
+				ISPManager::getInstance()->checkConfig($option, $value, false, "Настройка ISPManager: {$option} -> {$value}");
+			}
 		}
 	}
 
