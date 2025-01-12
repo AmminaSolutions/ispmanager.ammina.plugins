@@ -127,7 +127,6 @@ class ISPManager
 		$this->messageCommand($message, $params);
 		$params['elid'] = $type;
 		$params['sok'] = 'ok';
-		$params['clicked_button'] = 'ok';
 		$this->command("feature.edit", $params);
 		$result = $this->featureWait($type);
 		$this->messageCommandResult($result);
@@ -811,6 +810,7 @@ class ISPManager
 			'plid' => "isp-php{$phpVersion}",
 			'elid' => $option,
 			'value' => $value,
+			'sok' => 'ok',
 		];
 		$this->command("phpconf.edit", $params);
 	}
@@ -891,7 +891,6 @@ class ISPManager
 			$params['str_value'] = "'{$value}'";
 		}
 		$params['sok'] = 'ok';
-		$params['clicked_button'] = 'ok';
 		$this->command("db.server.settings.edit", $params);
 		$result = $this->waitMysqlServer($serverName);
 		//$this->messageCommandResult($result);
