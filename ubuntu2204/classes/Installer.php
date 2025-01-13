@@ -17,6 +17,10 @@ class Installer extends AbstractInstaller
 	 */
 	public function installFeatureMySql(): void
 	{
+		if ($this->isTaskComplete('feature_mysql')) {
+			return;
+		}
+		$this->setTaskStart('feature_mysql');
 		$package = 'package_mariadb';
 		if (file_exists($_SERVER['DOCUMENT_ROOT'] . '/local/installmysql')) {
 			$content = trim(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/local/installmysql'));
@@ -25,5 +29,6 @@ class Installer extends AbstractInstaller
 			}
 		}
 		ISPManager::getInstance()->commandFeatureMySql(null, $package);
+		$this->setTaskComplete('feature_mysql');
 	}
 }

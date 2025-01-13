@@ -10,10 +10,13 @@ abstract class AbstractInstaller
 	public int $memorySize;
 	public int $cpuCore;
 	public array $matchOptions = [];
+	public string $taskFile = '/usr/local/mgr5/etc/amminaisp/.install.task.ini';
+	protected array $taskList = [];
 
 	public function __construct()
 	{
 		$this->matchOptions();
+		$this->loadTaskList();
 	}
 
 	/**
@@ -29,6 +32,65 @@ abstract class AbstractInstaller
 		$this->cpuCore = (int)exec($command);
 		$this->matchOptionsOpcache();
 		$this->matchOptionsByMemory();
+	}
+
+	/**
+	 * Загружаем список задач установки
+	 * @return $this
+	 */
+	protected function loadTaskList(): static
+	{
+		if (file_exists($this->taskFile)) {
+			$this->taskList = parse_ini_file($this->taskFile);
+		}
+		return $this;
+	}
+
+	/**
+	 * Сохраняем список задач установки
+	 * @return $this
+	 */
+	protected function saveTaskList(): static
+	{
+		checkDirPath($this->taskFile);
+		$content = [];
+		foreach ($this->taskList as $name => $value) {
+			$content[] = "{$name}={$value}";
+		}
+		file_put_contents($this->taskFile, implode("\n", $content));
+		return $this;
+	}
+
+	/**
+	 * Проверяем - выполнялась ли задача установки
+	 * @param string $task
+	 * @return bool
+	 */
+	protected function isTaskComplete(string $task): bool
+	{
+		return $this->taskList[$task] ?? false;
+	}
+
+	/**
+	 * Устанавливаем начало выполнения задачи установки
+	 * @param string $task
+	 * @return $this
+	 */
+	protected function setTaskStart(string $task): static
+	{
+		$this->taskList[$task] = false;
+		return $this->saveTaskList();
+	}
+
+	/**
+	 * Устанавливаем успешное выполнение задачи установки
+	 * @param string $task
+	 * @return $this
+	 */
+	protected function setTaskComplete(string $task): static
+	{
+		$this->taskList[$task] = true;
+		return $this->saveTaskList();
 	}
 
 	/**
@@ -145,20 +207,30 @@ abstract class AbstractInstaller
 	 */
 	public function makeCharset(): void
 	{
+		if ($this->isTaskComplete('make_charset')) {
+			return;
+		}
+		$this->setTaskStart('make_charset');
 		$options = Settings::getInstance()->get("main.make_charsets");
 		if ($options['make']) {
 			ISPManager::getInstance()->makeCharset($options['list']);
 			Console::success("Создан набор кодировок доменов: " . implode(", ", $options['list']));
 		}
+		$this->setTaskComplete('make_charset');
 	}
 
 	public function installFilesMgr(): void
 	{
+		if ($this->isTaskComplete('files_mgr')) {
+			return;
+		}
+		$this->setTaskStart('files_mgr');
 		Console::showColoredString('Синхронизация файлов для ISPManager', 'light_green', null, true);
 		FilesSynchronizer::getInstance()
 			->setOnlyIspManagerRules()
 			->run(true)
 			->setDefaultRules();
+		$this->setTaskComplete('files_mgr');
 	}
 
 	/**
@@ -168,8 +240,15 @@ abstract class AbstractInstaller
 	 */
 	public function installFiles(): void
 	{
+		if ($this->isTaskComplete('install_files')) {
+			return;
+		}
+		$this->setTaskStart('install_files');
 		Console::showColoredString('Синхронизация файлов', 'light_green', null, true);
 		FilesSynchronizer::getInstance()->run(true);
+		Console::showColoredString('Генерация и синхронизация шаблонов конфигов', 'light_green', null, true);
+		TemplateSynchronizer::getInstance()->run(true);
+		$this->setTaskComplete('install_files');
 	}
 
 	/**
@@ -179,6 +258,10 @@ abstract class AbstractInstaller
 	 */
 	public function installIspMgrConfig(): void
 	{
+		if ($this->isTaskComplete('mgr_config')) {
+			return;
+		}
+		$this->setTaskStart('mgr_config');
 		Console::showColoredString("Проверяем конфиг ISPManager", 'light_green', null, true);
 		foreach (Settings::getInstance()->get("ispmanager") as $option => $value) {
 			if ($option === 'Option') {
@@ -192,10 +275,15 @@ abstract class AbstractInstaller
 				ISPManager::getInstance()->checkConfig($option, $value, false, "Настройка ISPManager: {$option} -> {$value}");
 			}
 		}
+		$this->setTaskComplete('mgr_config');
 	}
 
 	public function setBrandInfo(): void
 	{
+		if ($this->isTaskComplete('brand_info')) {
+			return;
+		}
+		$this->setTaskStart('brand_info');
 		$themes = [
 			"orion",
 			"z-mobile",
@@ -226,6 +314,7 @@ abstract class AbstractInstaller
 				}
 			}
 		}
+		$this->setTaskComplete('brand_info');
 	}
 
 	/**
@@ -263,12 +352,17 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureWeb(): void
 	{
+		if ($this->isTaskComplete('feature_web')) {
+			return;
+		}
+		$this->setTaskStart('feature_web');
 		Console::showColoredString("Установить APACHE? Если нет, то будет установлен только NGINX и работа веб-сервера всегда будет в режиме PHP-FPM. (Y/n): ", 'light_red', null, false);
 		$apache = (strtolower(readline("")) !== 'n');
 		ISPManager::getInstance()->commandFeatureWeb(false);
 		if ($apache) {
 			ISPManager::getInstance()->commandFeatureWeb(true);
 		}
+		$this->setTaskComplete('feature_web');
 	}
 
 	/**
@@ -278,7 +372,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureEMail(): void
 	{
+		if ($this->isTaskComplete('feature_email')) {
+			return;
+		}
+		$this->setTaskStart('feature_email');
 		ISPManager::getInstance()->commandFeatureEMail();
+		$this->setTaskComplete('feature_email');
 	}
 
 	/**
@@ -288,7 +387,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureDns(): void
 	{
+		if ($this->isTaskComplete('feature_dns')) {
+			return;
+		}
+		$this->setTaskStart('feature_dns');
 		ISPManager::getInstance()->commandFeatureDns();
+		$this->setTaskComplete('feature_dns');
 	}
 
 	/**
@@ -298,7 +402,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureFtp(): void
 	{
+		if ($this->isTaskComplete('feature_ftp')) {
+			return;
+		}
+		$this->setTaskStart('feature_ftp');
 		ISPManager::getInstance()->commandFeatureFtp();
+		$this->setTaskComplete('feature_ftp');
 	}
 
 	/**
@@ -308,7 +417,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureMySql(): void
 	{
+		if ($this->isTaskComplete('feature_mysql')) {
+			return;
+		}
+		$this->setTaskStart('feature_mysql');
 		ISPManager::getInstance()->commandFeatureMySql();
+		$this->setTaskComplete('feature_mysql');
 	}
 
 	/**
@@ -318,7 +432,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeaturePhpMyAdmin(): void
 	{
+		if ($this->isTaskComplete('feature_phpmyadmin')) {
+			return;
+		}
+		$this->setTaskStart('feature_phpmyadmin');
 		ISPManager::getInstance()->commandFeaturePhpMyAdmin();
+		$this->setTaskComplete('feature_phpmyadmin');
 	}
 
 	/**
@@ -328,7 +447,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeaturePostgreeSql(): void
 	{
+		if ($this->isTaskComplete('feature_postgreesql')) {
+			return;
+		}
+		$this->setTaskStart('feature_postgreesql');
 		ISPManager::getInstance()->commandFeaturePostgreeSql();
+		$this->setTaskComplete('feature_postgreesql');
 	}
 
 	/**
@@ -338,7 +462,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeaturePhpPgAdmin(): void
 	{
+		if ($this->isTaskComplete('feature_phppgadmin')) {
+			return;
+		}
+		$this->setTaskStart('feature_phppgadmin');
 		ISPManager::getInstance()->commandFeaturePhpPgAdmin();
+		$this->setTaskComplete('feature_phppgadmin');
 	}
 
 	/**
@@ -348,7 +477,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureQuota(): void
 	{
+		if ($this->isTaskComplete('feature_quota')) {
+			return;
+		}
+		$this->setTaskStart('feature_quota');
 		ISPManager::getInstance()->commandFeatureQuota();
+		$this->setTaskComplete('feature_quota');
 	}
 
 	/**
@@ -358,7 +492,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureFail2ban(): void
 	{
+		if ($this->isTaskComplete('feature_fail2ban')) {
+			return;
+		}
+		$this->setTaskStart('feature_fail2ban');
 		ISPManager::getInstance()->commandFeatureFail2ban();
+		$this->setTaskComplete('feature_fail2ban');
 	}
 
 	/**
@@ -368,7 +507,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureAnsible(): void
 	{
+		if ($this->isTaskComplete('feature_ansible')) {
+			return;
+		}
+		$this->setTaskStart('feature_ansible');
 		ISPManager::getInstance()->commandFeatureAnsible();
+		$this->setTaskComplete('feature_ansible');
 	}
 
 	/**
@@ -378,7 +522,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureDocker(): void
 	{
+		if ($this->isTaskComplete('feature_docker')) {
+			return;
+		}
+		$this->setTaskStart('feature_docker');
 		ISPManager::getInstance()->commandFeatureDocker();
+		$this->setTaskComplete('feature_docker');
 	}
 
 	/**
@@ -388,7 +537,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureNodejs(): void
 	{
+		if ($this->isTaskComplete('feature_nodejs')) {
+			return;
+		}
+		$this->setTaskStart('feature_nodejs');
 		ISPManager::getInstance()->commandFeatureNodejs();
+		$this->setTaskComplete('feature_nodejs');
 	}
 
 	/**
@@ -398,7 +552,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeaturePython(): void
 	{
+		if ($this->isTaskComplete('feature_python')) {
+			return;
+		}
+		$this->setTaskStart('feature_python');
 		ISPManager::getInstance()->commandFeaturePython();
+		$this->setTaskComplete('feature_python');
 	}
 
 	/**
@@ -408,7 +567,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureWireGuard(): void
 	{
+		if ($this->isTaskComplete('feature_wireguard')) {
+			return;
+		}
+		$this->setTaskStart('feature_wireguard');
 		ISPManager::getInstance()->commandFeatureWireGuard();
+		$this->setTaskComplete('feature_wireguard');
 	}
 
 	/**
@@ -418,7 +582,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureRedis(): void
 	{
+		if ($this->isTaskComplete('feature_redis')) {
+			return;
+		}
+		$this->setTaskStart('feature_redis');
 		ISPManager::getInstance()->commandFeatureRedis();
+		$this->setTaskComplete('feature_redis');
 	}
 
 	/**
@@ -428,7 +597,12 @@ abstract class AbstractInstaller
 	 */
 	public function installFeatureMemcached(): void
 	{
+		if ($this->isTaskComplete('feature_memcached')) {
+			return;
+		}
+		$this->setTaskStart('feature_memcached');
 		ISPManager::getInstance()->commandFeatureMemcached();
+		$this->setTaskComplete('feature_memcached');
 	}
 
 	/**
@@ -439,7 +613,12 @@ abstract class AbstractInstaller
 	public function installFeaturePhp(): void
 	{
 		foreach (Settings::getInstance()->get("features.php") as $version => $options) {
+			if ($this->isTaskComplete('feature_php_' . $version)) {
+				continue;
+			}
+			$this->setTaskStart('feature_php_' . $version);
 			ISPManager::getInstance()->commandFeaturePhp($version);
+			$this->setTaskComplete('feature_php_' . $version);
 		}
 	}
 
@@ -451,7 +630,12 @@ abstract class AbstractInstaller
 	public function installModules(): void
 	{
 		foreach (Settings::getInstance()->get("modules") as $module => $status) {
+			if ($this->isTaskComplete('module_' . $module)) {
+				continue;
+			}
+			$this->setTaskStart('module_' . $module);
 			ISPManager::getInstance()->commandModuleInstall($module, $status, "Настройка Модули -> " . $module . ". " . ($status ? "Установка" : "Удаление"));
+			$this->setTaskComplete('module_' . $module);
 		}
 	}
 
@@ -462,9 +646,17 @@ abstract class AbstractInstaller
 	 */
 	public function installPhpExtensions(): void
 	{
+		if ($this->isTaskComplete('php_extensions')) {
+			return;
+		}
+		$this->setTaskStart('php_extensions');
 		Console::showColoredString('Установка расширений PHP', 'light_green', null, true);
 		$phpVersions = ISPManager::getInstance()->commandPhpVersionsList();
 		foreach ($phpVersions as $version) {
+			if ($this->isTaskComplete('php_extensions_' . $version)) {
+				continue;
+			}
+			$this->setTaskStart('php_extensions_' . $version);
 			$phpPath = $this->phpPathByVersionName($version);
 			if (is_null($phpPath)) {
 				continue;
@@ -480,7 +672,10 @@ abstract class AbstractInstaller
 			$this->installPhpExtensionOpenSwoole($version);
 
 			$this->installPhpExtensionsForVersion($version);
+
+			$this->setTaskComplete('php_extensions_' . $version);
 		}
+		$this->setTaskComplete('php_extensions');
 	}
 
 	/**
@@ -573,12 +768,17 @@ abstract class AbstractInstaller
 		if (!$this->hasInstallPhpExtension($phpVersion, 'zstd')) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_zstd_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_zstd_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$command = "{$phpPath}/bin/pecl install zstd";
 		if ($phpVersion <= 56) {
 			$command = "{$phpPath}/bin/pecl install zstd-0.11.0";
 		}
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'zstd', 'zstd');
+		$this->setTaskComplete('php_extension_zstd_' . $phpVersion);
 	}
 
 	/**
@@ -591,6 +791,10 @@ abstract class AbstractInstaller
 		if (!$this->hasInstallPhpExtension($phpVersion, 'lzf')) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_lzf_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_lzf_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$options = $this->optionsInstallPhpExtension($phpVersion, 'lzf');
 		if ($phpVersion <= 71) {
@@ -606,6 +810,7 @@ abstract class AbstractInstaller
 			$command = "{$phpPath}/bin/pecl install -D '{$lineOptions}' lzf";
 		}
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'lzf', 'lzf');
+		$this->setTaskComplete('php_extension_lzf_' . $phpVersion);
 	}
 
 	/**
@@ -618,12 +823,17 @@ abstract class AbstractInstaller
 		if (!$this->hasInstallPhpExtension($phpVersion, 'igbinary')) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_igbinary_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_igbinary_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$command = "{$phpPath}/bin/pecl install igbinary";
 		if ($phpVersion <= 56) {
 			$command = "{$phpPath}/bin/pecl install igbinary-2.0.8";
 		}
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'igbinary', 'igbinary');
+		$this->setTaskComplete('php_extension_igbinary_' . $phpVersion);
 	}
 
 	/**
@@ -636,12 +846,17 @@ abstract class AbstractInstaller
 		if (!$this->hasInstallPhpExtension($phpVersion, 'msgpack')) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_msgpack_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_msgpack_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$command = "{$phpPath}/bin/pecl install msgpack";
 		if ($phpVersion <= 56) {
 			$command = "{$phpPath}/bin/pecl install msgpack-0.5.7";
 		}
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'msgpack', 'msgpack');
+		$this->setTaskComplete('php_extension_msgpack_' . $phpVersion);
 	}
 
 	/**
@@ -657,9 +872,14 @@ abstract class AbstractInstaller
 		if ($phpVersion <= 56) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_brotli_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_brotli_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$command = "{$phpPath}/bin/pecl install brotli";
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'brotli', 'brotli');
+		$this->setTaskComplete('php_extension_brotli_' . $phpVersion);
 	}
 
 	/**
@@ -675,6 +895,10 @@ abstract class AbstractInstaller
 		if ($phpVersion <= 52) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_redis_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_redis_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$options = $this->optionsInstallPhpExtension($phpVersion, 'redis');
 		if ($phpVersion <= 56) {
@@ -704,6 +928,7 @@ abstract class AbstractInstaller
 			$command = "{$phpPath}/bin/pecl install -D '{$lineOptions}' redis" . ($phpVersion <= 73 ? '-6.0.2' : '');
 		}
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'lzf', 'lzf');
+		$this->setTaskStart('php_extension_redis_' . $phpVersion);
 	}
 
 	/**
@@ -719,6 +944,10 @@ abstract class AbstractInstaller
 		if ($phpVersion <= 80) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_swoole_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_swoole_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$options = $this->optionsInstallPhpExtension($phpVersion, 'swoole');
 		$lineOptions = implode(" ", [
@@ -740,6 +969,7 @@ abstract class AbstractInstaller
 		]);
 		$command = "{$phpPath}/bin/pecl install -D '{$lineOptions}' swoole";
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'swoole', 'swoole');
+		$this->setTaskComplete('php_extension_swoole_' . $phpVersion);
 	}
 
 	/**
@@ -755,6 +985,10 @@ abstract class AbstractInstaller
 		if ($phpVersion <= 80) {
 			return;
 		}
+		if ($this->isTaskComplete('php_extension_openswoole_' . $phpVersion)) {
+			return;
+		}
+		$this->setTaskStart('php_extension_openswoole_' . $phpVersion);
 		$phpPath = $this->phpPathByVersionName($phpVersion);
 		$options = $this->optionsInstallPhpExtension($phpVersion, 'openswoole');
 		$lineOptions = implode(" ", [
@@ -768,6 +1002,7 @@ abstract class AbstractInstaller
 		]);
 		$command = "{$phpPath}/bin/pecl install -D '{$lineOptions}' openswoole";
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'openswoole', 'openswoole');
+		$this->setTaskComplete('php_extension_openswoole_' . $phpVersion);
 	}
 
 	/**
@@ -849,15 +1084,25 @@ abstract class AbstractInstaller
 	 */
 	public function installPhpSettings(): void
 	{
+		if ($this->isTaskComplete('php_settings')) {
+			return;
+		}
+		$this->setTaskStart('php_settings');
 		Console::showColoredString("Настройка параметров для PHP", 'light_green', null, true);
 		$phpVersions = ISPManager::getInstance()->commandPhpVersionsList();
 		foreach ($phpVersions as $version) {
+			if ($this->isTaskComplete('php_settings_' . $version)) {
+				continue;
+			}
+			$this->setTaskStart('php_settings_' . $version);
 			$phpPath = $this->phpPathByVersionName($version);
 			if (is_null($phpPath)) {
 				continue;
 			}
 			$this->installPhpSettingsForVersion($version);
+			$this->setTaskComplete('php_settings_' . $version);
 		}
+		$this->setTaskComplete('php_settings');
 	}
 
 	/**
@@ -893,11 +1138,21 @@ abstract class AbstractInstaller
 	 */
 	public function installMysqlSettings(): void
 	{
+		if ($this->isTaskComplete('mysql_settings')) {
+			return;
+		}
+		$this->setTaskStart('mysql_settings');
 		Console::showColoredString("Настройка параметров для Mysql серверов", 'light_green', null, true);
 		$mysqlServers = ISPManager::getInstance()->commandMysqlServerList();
 		foreach ($mysqlServers as $server => $serverData) {
+			if ($this->isTaskComplete('mysql_settings_' . $server)) {
+				return;
+			}
+			$this->setTaskStart('mysql_settings_' . $server);
 			$this->installMysqlSettingsVersion($server);
+			$this->setTaskComplete('mysql_settings_' . $server);
 		}
+		$this->setTaskComplete('mysql_settings');
 	}
 
 	/**
@@ -965,7 +1220,12 @@ abstract class AbstractInstaller
 	 */
 	public function installAmminaIspCron()
 	{
+		if ($this->isTaskComplete('amminaisp_cron')) {
+			return;
+		}
+		$this->setTaskStart('amminaisp_cron');
 		Console::showColoredString("Добавляем системное задание AmminaISP", 'light_green', null, true);
 		ISPManager::getInstance()->makeAmminaIspCronCommand();
+		$this->setTaskComplete('amminaisp_cron');
 	}
 }

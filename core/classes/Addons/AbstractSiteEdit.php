@@ -7,7 +7,6 @@ use AmminaISP\Core\Utils;
 use function AmminaISP\Core\boolToFlag;
 use function AmminaISP\Core\checkDirPath;
 use function AmminaISP\Core\findFile;
-use function AmminaISP\Core\joinPaths;
 
 abstract class AbstractSiteEdit extends AbstractAddon
 {
