@@ -928,7 +928,7 @@ abstract class AbstractInstaller
 			$command = "{$phpPath}/bin/pecl install -D '{$lineOptions}' redis" . ($phpVersion <= 73 ? '-6.0.2' : '');
 		}
 		$this->runInstallPhpExtensionCommand($phpVersion, $command, 'lzf', 'lzf');
-		$this->setTaskStart('php_extension_redis_' . $phpVersion);
+		$this->setTaskComplete('php_extension_redis_' . $phpVersion);
 	}
 
 	/**
@@ -1048,6 +1048,10 @@ abstract class AbstractInstaller
 	 */
 	public function installPhpSettingsShowUsers(): void
 	{
+		if ($this->isTaskComplete('php_settings_show_users')) {
+			return;
+		}
+		$this->setTaskStart('php_settings_show_users');
 		Console::showColoredString("Выбираем параметры для показа пользователям панели", 'light_green', null, true);
 		$phpVersions = ISPManager::getInstance()->commandPhpVersionsList();
 		foreach ($phpVersions as $version) {
@@ -1057,6 +1061,7 @@ abstract class AbstractInstaller
 			}
 			$this->installPhpSettingsShowUsersForVersion($version);
 		}
+		$this->setTaskComplete('php_settings_show_users');
 	}
 
 	/**
