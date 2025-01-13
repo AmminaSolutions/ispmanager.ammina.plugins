@@ -1,6 +1,3 @@
 <?php
 include_once(__DIR__ . "/../include.php");
-
-$files = \AmminaISP\Core\FilesSynchronizer::getInstance();
-$files->run(true);
-
+include_once($_SERVER['DOCUMENT_ROOT'] . "/core/commands/sync.files.php");

@@ -37,3 +37,8 @@ function removePathRoot(string $path, ?string $root = null): string
 {
 	return Utils::removePathRoot($path, $root);
 }
+
+function findFile(string $path): ?string
+{
+	return Utils::findFile($path);
+}

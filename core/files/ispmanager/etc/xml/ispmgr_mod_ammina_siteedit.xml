@@ -41,11 +41,8 @@
                         <if value="bitrix" hide="laravel_settings"/>
                     </select>
                 </field>
-                <field name="site_platform_bitrix">
-                    <input type="hidden" name="site_platform_bitrix"/>
-                </field>
-                <field name="site_platform_laravel">
-                    <input type="hidden" name="site_platform_laravel"/>
+                <field name="site_php_bin_wrapper_ammina">
+                    <input type="hidden" name="site_php_bin_wrapper_ammina"/>
                 </field>
             </page>
             <page name="laravel_settings">

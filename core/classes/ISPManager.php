@@ -906,7 +906,7 @@ class ISPManager
 	 */
 	public function waitMysqlServer(string $serverName): bool
 	{
-		sleep(3);
+		sleep(5);
 		$maxRetry = static::$maxRetryWait;
 		while (true) {
 			$connection = $this->getMysqlConnection($serverName);

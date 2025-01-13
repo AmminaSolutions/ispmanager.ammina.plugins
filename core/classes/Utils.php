@@ -82,4 +82,25 @@ class Utils
 		}
 		return $value;
 	}
+
+	/**
+	 * Поиск файла в одном из каталогов файлов
+	 * @param string $path
+	 * @return string|null
+	 */
+	public static function findFile(string $path): ?string
+	{
+		$from = [
+			joinPaths($_SERVER['DOCUMENT_ROOT'], 'core/files', $path),
+			joinPaths($_SERVER['OS_ROOT'], 'files', $path),
+			joinPaths($_SERVER['DOCUMENT_ROOT'], '.local/files', $path),
+		];
+		$result = null;
+		foreach ($from as $checkPath) {
+			if (file_exists($checkPath)) {
+				$result = $checkPath;
+			}
+		}
+		return $result;
+	}
 }

@@ -3,13 +3,16 @@
 namespace AmminaISP\Core;
 
 /**
- * Синхронизация файлов из каталогов AmminaISP в каталоги ISPManager
+ * Генерация и синхронизация шаблонов из каталогов AmminaISP в каталоги ISPManager
  */
-class FilesSynchronizer
+class TemplateSynchronizer
 {
-	protected static ?FilesSynchronizer $instance = null;
+	protected static ?TemplateSynchronizer $instance = null;
 	protected array $rules = [];
+	protected array $templateParts = [];
 	protected array $afterCommands = [];
+	protected array $fileContents = [];
+	protected array $partContents = [];
 
 	public static function getInstance(): static
 	{
@@ -22,6 +25,7 @@ class FilesSynchronizer
 	public function __construct()
 	{
 		$this->setDefaultRules();
+		$this->setDefaultTemplateParts();
 	}
 
 	/**
@@ -42,21 +46,7 @@ class FilesSynchronizer
 	public function setDefaultRules(): static
 	{
 		$this->clearRules();
-		$this->addRule('ispmanager', '/usr/local/mgr5');
-		$this->addRule('server/etc', '/etc');
-		$this->addRule('server/usr', '/usr');
-		$this->addRule('server/var', '/var');
-		return $this;
-	}
-
-	/**
-	 * Создать правила синхронизации только файлов ISPManager
-	 * @return $this
-	 */
-	public function setOnlyIspManagerRules(): static
-	{
-		$this->clearRules();
-		$this->addRule('ispmanager', '/usr/local/mgr5');
+		$this->addRule('templates.ispmanager', '/usr/local/mgr5/etc/templates');
 		return $this;
 	}
 
@@ -82,10 +72,49 @@ class FilesSynchronizer
 	}
 
 	/**
-	 * Выполнение синхронизации файлов
+	 * Установить пути к частям шаблонов по умолчанию
+	 * @return $this
+	 */
+	public function setDefaultTemplateParts(): static
+	{
+		$this->clearTemplateParts();
+		$this->addTemplatePart('templates.part');
+		return $this;
+	}
+
+	/**
+	 * Очистить пути к частям шаблонов
+	 * @return $this
+	 */
+	public function clearTemplateParts(): static
+	{
+		$this->templateParts = [];
+		return $this;
+	}
+
+	/**
+	 * Добавить путь к частям шаблонов
+	 * @param string $path
+	 * @return $this
+	 */
+	public function addTemplatePart(string $path): static
+	{
+		$paths = [
+			joinPaths($_SERVER['DOCUMENT_ROOT'], 'core/files', $path),
+			joinPaths($_SERVER['OS_ROOT'], 'files', $path),
+			joinPaths($_SERVER['DOCUMENT_ROOT'], '.local/files', $path),
+		];
+		$this->templateParts[] = [
+			'path' => $paths,
+		];
+		return $this;
+	}
+
+	/**
+	 * Выполнение генерации и синхронизации шаблонов
 	 *
 	 * @param bool $showMessages
-	 * @return FilesSynchronizer
+	 * @return TemplateSynchronizer
 	 */
 	public function run(bool $showMessages = false): static
 	{
@@ -95,9 +124,43 @@ class FilesSynchronizer
 		}
 		$this->runAfterCommands($showMessages);
 		if ($showMessages) {
-			Console::success("Синхронизация выполнена");
+			Console::success("Генерация и синхронизация шаблонов выполнена");
 		}
 		return $this;
+	}
+
+	/**
+	 * Ищем команды, которые должны быть выполнены при изменении указанного файла
+	 *
+	 * @param string $file
+	 * @param array $commands
+	 * @return void
+	 */
+	protected function findAfterCommands(string $file, array $commands): void
+	{
+		foreach ($commands as $path => $pathCommands) {
+			if (str_starts_with($file, $path)) {
+				foreach ($pathCommands as $command) {
+					$this->afterCommands[$command] = $command;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Выполняем команды
+	 * @param bool $showMessages
+	 * @return void
+	 */
+	protected function runAfterCommands(bool $showMessages = false): void
+	{
+		$this->afterCommands = array_values($this->afterCommands);
+		foreach ($this->afterCommands as $command) {
+			if ($showMessages) {
+				Console::notice("Выполняем команду: {$command}");
+				system($command);
+			}
+		}
 	}
 
 	/**
@@ -111,7 +174,7 @@ class FilesSynchronizer
 	{
 		[$files, $commands] = $this->findFilesFromRule($rule);
 		foreach ($files as $file) {
-			$content = file_get_contents($file['from']);
+			$content = $this->makeFileContent($file['from']);
 			if (!file_exists($file['to']) || file_get_contents($file['to']) !== $content) {
 				checkDirPath($file['to']);
 				file_put_contents($file['to'], $content);
@@ -119,7 +182,6 @@ class FilesSynchronizer
 				if ($showMessages) {
 					Console::notice("Файл изменен: {$file['from']} -> {$file['to']}");
 				}
-
 			}
 		}
 	}
@@ -160,11 +222,12 @@ class FilesSynchronizer
 
 						$commands[dirname($relPath)][] = $lineCommand;
 					};
-				} else {
+				} elseif ($file->getExtension() === 'php') {
+					$resultRelPath = substr($relPath, 0, -4);
 					$files[$relPath] = [
 						'rel' => $relPath,
 						'from' => $file->getPathname(),
-						'to' => joinPaths($rule['to'], $relPath),
+						'to' => joinPaths($rule['to'], $resultRelPath),
 					];
 				}
 			}
@@ -172,37 +235,34 @@ class FilesSynchronizer
 		return [$files, $commands];
 	}
 
-	/**
-	 * Ищем команды, которые должны быть выполнены при изменении указанного файла
-	 *
-	 * @param string $file
-	 * @param array $commands
-	 * @return void
-	 */
-	protected function findAfterCommands(string $file, array $commands): void
+	protected function makeFileContent(string $filePath): string
 	{
-		foreach ($commands as $path => $pathCommands) {
-			if (str_starts_with($file, $path)) {
-				foreach ($pathCommands as $command) {
-					$this->afterCommands[$command] = $command;
-				}
-			}
+		if (!array_key_exists($filePath, $this->fileContents)) {
+			ob_start();
+			include $filePath;
+			$this->fileContents[$filePath] = ob_get_clean();
 		}
+		return $this->fileContents[$filePath];
 	}
 
-	/**
-	 * Выполняем команды
-	 * @param bool $showMessages
-	 * @return void
-	 */
-	protected function runAfterCommands(bool $showMessages = false): void
+	public function includePart(string $partPath): void
 	{
-		$this->afterCommands = array_values($this->afterCommands);
-		foreach ($this->afterCommands as $command) {
-			if ($showMessages) {
-				Console::notice("Выполняем команду: {$command}");
-				system($command);
+		if (!array_key_exists($partPath, $this->partContents)) {
+			$fileName = null;
+			foreach ($this->templateParts as $rule) {
+				foreach ($rule['path'] as $part) {
+					$fullName = joinPaths($part, $partPath);
+					if (file_exists($fullName)) {
+						$fileName = $fullName;
+					}
+				}
+			}
+			if (!is_null($fileName)) {
+				ob_start();
+				include $fileName;
+				$this->partContents[$partPath] = ob_get_clean();
 			}
 		}
+		echo $this->partContents[$partPath];
 	}
 }

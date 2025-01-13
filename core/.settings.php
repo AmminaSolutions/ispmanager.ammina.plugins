@@ -405,7 +405,7 @@ return [
 	],
 	'php_settings' => [
 		'all' => [
-			'display_errors' => 'On',
+			'display_errors' => 'Off',
 			'enable_dl' => 'On',
 			'short_open_tag' => 'On',
 			'allow_url_fopen' => 'On',
