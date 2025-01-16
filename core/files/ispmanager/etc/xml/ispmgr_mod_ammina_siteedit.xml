@@ -13,7 +13,6 @@
                         <if value="off" hide="bitrix_operation"/>
                         <if value="off" hide="bitrix_modules"/>
                         <if value="off" hide="laravel_settings"/>
-                        <if value="off" hide="seo_settings"/>
                     </input>
                 </field>
                 <field name="site_platform" base="yes">
@@ -22,7 +21,6 @@
                         <if value="default" hide="bitrix_operation"/>
                         <if value="default" hide="bitrix_modules"/>
                         <if value="default" hide="laravel_settings"/>
-                        <if value="default" hide="seo_settings"/>
 
                         <if value="laravel" hide="site_redirect_www"/>
                         <if value="laravel" hide="site_redirect_http"/>
@@ -43,6 +41,15 @@
                 </field>
                 <field name="site_php_bin_wrapper_ammina">
                     <input type="hidden" name="site_php_bin_wrapper_ammina"/>
+                </field>
+                <field name="site_bitrix_composite_var_suffix">
+                    <input type="hidden" name="site_bitrix_composite_var_suffix"/>
+                </field>
+                <field name="site_bitrix_composite_memcached">
+                    <input type="hidden" name="site_bitrix_composite_memcached"/>
+                </field>
+                <field name="site_bitrix_composite_memcached_pass">
+                    <input type="hidden" name="site_bitrix_composite_memcached_pass"/>
                 </field>
             </page>
             <page name="laravel_settings">
@@ -65,10 +72,10 @@
                         <if value="on" hide="site_bitrix_modules_ammina_regions" shadow="yes"/>
                     </input>
                 </field>
-                <field name="site_bitrix_settings_pushserver">
+                <field name="site_bitrix_settings_pushserver" if="nginx">
                     <input type="checkbox" name="site_bitrix_settings_pushserver"/>
                 </field>
-                <field name="site_bitrix_settings_composite" remove_if="new">
+                <field name="site_bitrix_settings_composite" remove_if="new" if="nginx">
                     <input type="checkbox" name="site_bitrix_settings_composite">
                         <if value="on" hide="site_bitrix_settings_b24" shadow="yes"/>
                     </input>
@@ -126,7 +133,7 @@
                     <input type="text" name="site_bitrix_operation_make_database_name"/>
                 </field>
             </page>
-            <page name="bitrix_modules" remove_if="new">
+            <page name="bitrix_modules" remove_if="new" collapsed="yes">
                 <field name="bitrix_modules_note" noname="yes" fullwith="yes">
                     <textdata type="msg" name="bitrix_modules_note"/>
                 </field>
@@ -144,7 +151,7 @@
                     <input type="checkbox" name="site_bitrix_modules_ammina_backup"/>
                 </field>
             </page>
-            <page name="seo_settings" collapsed="yes">
+            <page name="seo_settings" collapsed="yes" if="nginx">
                 <field name="site_seo_settings_deny_robots">
                     <input type="checkbox" name="site_seo_settings_deny_robots"/>
                 </field>
