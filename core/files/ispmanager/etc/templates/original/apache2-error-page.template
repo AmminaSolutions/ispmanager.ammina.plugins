@@ -1,0 +1,12 @@
+<VirtualHost {% $LISTEN_ON %}>
+{% if $ERROR == on %}
+	ErrorDocument {% $CODE %} [% $URI %]
+{% endif %}
+</VirtualHost>
+{% if $SSL == on %}
+<VirtualHost {% $LISTEN_ON_SSL %}>
+{% if $ERROR == on %}
+	ErrorDocument {% $CODE %} [% $URI %]
+{% endif %}
+</VirtualHost>
+{% endif %}

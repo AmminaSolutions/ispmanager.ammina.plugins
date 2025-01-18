@@ -1,0 +1,42 @@
+<VirtualHost {% $LISTEN_ON_SSL %}>
+	ServerName {% $NAME %}
+	ServerAlias [% $ALIASES %]
+	DocumentRoot [% $DOCROOT %]
+	ServerAdmin [% $EMAIL %]
+	SSLEngine on
+	SSLCertificateFile [% $SSL_CRT %]
+	SSLCertificateKeyFile [% $SSL_KEY %]
+{% if $SSL_BUNDLE != "" %}
+	SSLCertificateChainFile [% $SSL_BUNDLE %]
+{% endif %}
+	SSLHonorCipherOrder on
+	SSLProtocol [% $SSL_SECURE_PROTOCOLS %]
+	SSLCipherSuite [% $SSL_SECURE_CHIPHERS %]
+{% if $HSTS == on %}
+	<IfModule headers_module>
+		Header always set Strict-Transport-Security "max-age=31536000; preload"
+	</IfModule>
+{% endif %}
+{% if $DIRINDEX != "" %}
+	DirectoryIndex [% $DIRINDEX %]
+{% endif %}
+	AddDefaultCharset [% $CHARSET %]
+{% if $APACHEITK == on %}
+	AssignUserID {% $OWNER %} {% $OWNER_GROUP %}
+{% else %}
+	SuexecUserGroup {% $OWNER %} {% $OWNER_GROUP %}
+{% endif %}
+{% if $LOG_ACCESS == on %}
+	CustomLog {% $ACCESS_LOG_PATH %} combined
+{% else %}
+	CustomLog /dev/null combined
+{% endif %}
+{% if $LOG_ERROR == on %}
+	ErrorLog {% $ERROR_LOG_PATH %}
+{% else %}
+	ErrorLog /dev/null
+{% endif %}
+{% if $INCLUDE %}
+	Include {% $INCLUDE %}
+{% endif %}
+</VirtualHost>

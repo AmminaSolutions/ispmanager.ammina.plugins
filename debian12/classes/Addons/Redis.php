@@ -2,9 +2,9 @@
 
 namespace AmminaISP\Debian12\Addons;
 
-use AmminaISP\Core\Addons\AbstractRedis;
+use AmminaISP\Core\Addons\RedisAbstract;
 
-class Redis extends AbstractRedis
+class Redis extends RedisAbstract
 {
 	protected function checkSystemSettings(): void
 	{

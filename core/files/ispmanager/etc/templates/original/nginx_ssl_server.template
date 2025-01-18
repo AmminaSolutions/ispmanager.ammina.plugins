@@ -1,0 +1,12 @@
+server {
+        server_name __DOMAIN__;
+        disable_symlinks if_not_owner;
+        include /etc/nginx/vhosts-includes/*.conf;
+        add_header Strict-Transport-Security "max-age=31536000;";
+        listen __ADDR____PORT__ ssl__DEFAULT_SERVER__;
+        ssl_certificate __SSL_CERT__;
+        ssl_certificate_key __SSL_KEY__;
+        ssl_ciphers __SSL_CIPHERS__;
+        ssl_prefer_server_ciphers on;
+        ssl_protocols __SSL_PROTOCOLS__;
+}

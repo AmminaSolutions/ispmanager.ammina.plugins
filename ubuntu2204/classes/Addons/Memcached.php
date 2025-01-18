@@ -2,9 +2,9 @@
 
 namespace AmminaISP\Ubuntu2204\Addons;
 
-use AmminaISP\Core\Addons\AbstractMemcached;
+use AmminaISP\Core\Addons\MemcachedAbstract;
 
-class Memcached extends AbstractMemcached
+class Memcached extends MemcachedAbstract
 {
 
 	protected function checkSystemSettings(): void

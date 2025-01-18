@@ -1,0 +1,10 @@
+<Directory {% $LOCATION_PATH %}>
+{% if $ACCESS == on %}
+	Allow from all
+	AuthName [% $AUTH_REALM  %]
+	AuthType Basic
+	AuthUserFile [% $AUTH_FILE %]
+	Order allow,deny
+	Require valid-user
+{% endif %}
+</Directory>

@@ -1,0 +1,46 @@
+{% if $CREATE_DIRECTORY %}
+<Directory {% $LOCATION_PATH %}>
+{% if $SSI == on %}
+	Options +Includes
+{% endif %}
+{% if $CGI == on %}
+	Options +ExecCGI
+{% if $CGI_EXT != "" %}
+	AddHandler cgi-script [% $CGI_EXT %]
+{% endif %}
+{%elif $PHP_MODE == php_mode_fcgi_apache %}
+	Options +ExecCGI
+{% else %}
+	Options -ExecCGI
+{% endif %}
+{% if $PHP_MODE == php_mode_mod %}
+{% if $ISP_CUT %}
+	php_admin_flag engine on
+{% endif %}
+	<IfModule php5_module>
+		php_admin_flag engine on
+	</IfModule>
+	<IfModule php7_module>
+		php_admin_flag engine on
+	</IfModule>
+	<IfModule php_module>
+		php_admin_flag engine on
+	</IfModule>
+{% elif $PHP_MODE == php_mode_lsapi %}
+	<IfModule lsapi_module>
+		php_admin_flag engine on
+	</IfModule>
+{% endif %}
+{% if $REDIRECT_HTTP == on %}
+	RewriteEngine on
+	RewriteCond %{HTTPS} off
+	RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R,L]
+{% endif %}
+</Directory>
+{% endif %}
+{% if $CREATE_STATDIR %}
+<Directory {% $STATDIR_LOCATION %}>
+	DirectoryIndex index.html
+	AddDefaultCharset [% $WEBSTAT_ENCODING %]
+</Directory>
+{% endif %}

@@ -1,0 +1,12 @@
+<VirtualHost __ADDR__:__PORT__>
+	ServerName __DOMAIN__
+	<IfModule headers_module>
+		Header always set Strict-Transport-Security "max-age=31536000; preload"
+	</IfModule>
+	SSLCertificateFile __SSL_CERT__
+	SSLCertificateKeyFile __SSL_KEY__
+	SSLCipherSuite __SSL_CIPHERS__
+	SSLEngine on
+	SSLHonorCipherOrder on
+	SSLProtocol __SSL_PROTOCOLS__
+</VirtualHost>

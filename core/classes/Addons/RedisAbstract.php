@@ -3,12 +3,9 @@
 namespace AmminaISP\Core\Addons;
 
 use function AmminaISP\Core\addJob;
-use function AmminaISP\Core\boolToFlag;
-use function AmminaISP\Core\checkDirPath;
-use function AmminaISP\Core\checkOnOff;
 use function AmminaISP\Core\isOn;
 
-abstract class AbstractRedis extends AbstractAddon
+abstract class RedisAbstract extends AddonAbstract
 {
 	public string $templateFileName = '/usr/local/mgr5/etc/templates/amminaisp/redis.template';
 	public string $redisOptionsFile = '/etc/redis/redis.conf';
@@ -16,6 +13,23 @@ abstract class AbstractRedis extends AbstractAddon
 	public string $redisRun = '/var/run/redis';
 	public string $redisUser = 'redis';
 	public ?string $settingsFile = 'redis.ini';
+	public array $params = [
+		'ammina_memorylimit' => [
+			'type' => 'int',
+			'ini' => 'memorylimit',
+			'default' => 128,
+		],
+		'ammina_databases' => [
+			'type' => 'int',
+			'ini' => 'databases',
+			'default' => 16,
+		],
+		'ammina_issocket' => [
+			'type' => 'bool',
+			'ini' => 'issocket',
+			'default' => true,
+		],
+	];
 
 	public function __construct()
 	{
@@ -33,23 +47,15 @@ abstract class AbstractRedis extends AbstractAddon
 	 */
 	public function openForm(): void
 	{
-		$this->dataAppend['ammina_memorylimit'] = $this->fromIni('memorylimit', 128);
-		$this->dataAppend['ammina_databases'] = $this->fromIni('databases', 16);
-		$this->dataAppend['ammina_issocket'] = $this->fromIniFlag('issocket', true);
+		$this->fillDataAppendFromIni();
 	}
 
 	public function saveForm(): void
 	{
 		@exec("service redis stop");
-		$this
-			->setIni('memorylimit', (int)$_SERVER['PARAM_ammina_memorylimit'])
-			->setIni('databases', (int)$_SERVER['PARAM_ammina_databases'])
-			->setIniFlag('issocket', $_SERVER['PARAM_ammina_issocket'])
-			->saveIni();
-
-		$this->dataAppend['ammina_memorylimit'] = (int)$_SERVER['PARAM_ammina_memorylimit'];
-		$this->dataAppend['ammina_databases'] = (int)$_SERVER['PARAM_ammina_databases'];
-		$this->dataAppend['ammina_issocket'] = checkOnOff($_SERVER['PARAM_ammina_issocket']);
+		$this->fillIniFromParams();
+		$this->saveIni();
+		$this->fillDataAppendFromIni();
 
 		$templateReplace = [
 			"AMMINA_MAXMEMORY" => (int)$_SERVER['PARAM_ammina_memorylimit'] . "mb",

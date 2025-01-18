@@ -1,0 +1,15 @@
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+{% if $ERROR == on %}
+	error_page {% $CODE %} [% $URI %];
+{% endif %}
+}
+{% if $SSL == on %}
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	ssl_prefer_server_ciphers on;
+{% if $ERROR == on %}
+	error_page {% $CODE %} [% $URI %];
+{% endif %}
+}
+{% endif %}

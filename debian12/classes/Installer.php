@@ -2,11 +2,9 @@
 
 namespace AmminaISP\Debian12;
 
-use AmminaISP\Core\AbstractInstaller;
-use AmminaISP\Core\Console;
-use AmminaISP\Core\ISPManager;
+use AmminaISP\Core\InstallerAbstract;
 
-class Installer extends AbstractInstaller
+class Installer extends InstallerAbstract
 {
 
 }

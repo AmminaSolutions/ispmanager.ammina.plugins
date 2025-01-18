@@ -9,7 +9,7 @@ use function AmminaISP\Core\isOn;
 
 set_time_limit(60);
 
-abstract class AbstractAddon
+abstract class AddonAbstract
 {
 	public string $xml = '';
 	public array $dataAppend = [];
@@ -17,6 +17,7 @@ abstract class AbstractAddon
 	public string $settingsDir = '/usr/local/mgr5/etc/amminaisp/';
 	public ?string $settingsFile = null;
 	public ?array $iniData = null;
+	public array $params = [];
 
 	public function __construct()
 	{
@@ -206,6 +207,34 @@ abstract class AbstractAddon
 	protected function getFlagFromParam(string $serverParamName): string
 	{
 		return boolToFlag(isOn($_SERVER["PARAM_{$serverParamName}"] ?? ''));
+	}
+
+	protected function fillDataAppendFromIni(): static
+	{
+		foreach ($this->params as $paramName => $settings) {
+			if ($settings['type'] === 'bool') {
+				$this->dataAppend[$paramName] = $this->fromIniFlag($settings['ini'], $settings['default'] ?? false);
+			} elseif ($settings['type'] === 'int') {
+				$this->dataAppend[$paramName] = (int)$this->fromIni($settings['ini'], $settings['default'] ?? 0);
+			} else {
+				$this->dataAppend[$paramName] = $this->fromIni($settings['ini'], $settings['default'] ?? '');
+			}
+		}
+		return $this;
+	}
+
+	protected function fillIniFromParams(): static
+	{
+		foreach ($this->params as $paramName => $settings) {
+			if ($settings['type'] === 'bool') {
+				$this->setIniFlagFromParam($settings['ini'], $paramName);
+			} elseif ($settings['type'] === 'int') {
+				$this->setIniFromParam($settings['ini'], $paramName);
+			} else {
+				$this->setIniFromParam($settings['ini'], $paramName);
+			}
+		}
+		return $this;
 	}
 
 	abstract public function openForm(): void;

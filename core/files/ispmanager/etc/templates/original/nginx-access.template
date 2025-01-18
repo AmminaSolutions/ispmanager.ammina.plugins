@@ -1,0 +1,65 @@
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	location {% $LOCATION_PATH %} {
+{% if $CREATE_ACCESS_LOCATION == on %}
+{% if $PHP == on %}
+		location ~ [^/]\.ph(p\d*|tml)$ {
+{% if $PHP_MODE == php_mode_fcgi_nginxfpm %}
+			try_files /does_not_exists @php;
+{% else %}
+			try_files /does_not_exists @fallback;
+{% endif %}
+		}
+{% endif %}
+{% if $REDIRECT_TO_APACHE == on %}
+		location ~* ^.+\.({% $NGINX_STATIC %})$ {
+{% if $SRV_CACHE == on %}
+			expires [% $EXPIRES_VALUE %];
+{% endif %}
+			try_files $uri $uri/ @fallback;
+		}
+		location {% $LOCATION_PATH %} {
+			try_files /does_not_exists @fallback;
+		}
+{% endif %}
+{% endif %}
+{% if $ACCESS == on %}
+		auth_basic [% $AUTH_REALM  %];
+		auth_basic_user_file [% $AUTH_FILE %];
+{% endif %}
+	}
+}
+{% if $SSL == on %}
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	ssl_prefer_server_ciphers on;
+	location {% $LOCATION_PATH %} {
+{% if $CREATE_ACCESS_LOCATION == on %}
+{% if $PHP == on %}
+		location ~ [^/]\.ph(p\d*|tml)$ {
+{% if $PHP_MODE == php_mode_fcgi_nginxfpm %}
+			try_files /does_not_exists @php;
+{% else %}
+			try_files /does_not_exists @fallback;
+{% endif %}
+		}
+{% endif %}
+{% if $REDIRECT_TO_APACHE == on %}
+		location ~* ^.+\.({% $NGINX_STATIC %})$ {
+{% if $SRV_CACHE == on %}
+			expires [% $EXPIRES_VALUE %];
+{% endif %}
+			try_files $uri $uri/ @fallback;
+		}
+		location {% $LOCATION_PATH %} {
+			try_files /does_not_exists @fallback;
+		}
+{% endif %}
+{% endif %}
+{% if $ACCESS == on %}
+		auth_basic [% $AUTH_REALM  %];
+		auth_basic_user_file [% $AUTH_FILE %];
+{% endif %}
+	}
+}
+{% endif %}

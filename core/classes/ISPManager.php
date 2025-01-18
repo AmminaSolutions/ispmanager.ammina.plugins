@@ -1092,15 +1092,58 @@ class ISPManager
 				return $owner;
 			}
 		}
+		$data = $this->getWebdomain($currentName);
+		if (!is_null($data)) {
+			return $data['owner']['$'];
+		}
+		return null;
+	}
+
+	public function getWebdomain(string $currentName): ?array
+	{
 		$data = $this->command("webdomain", []);
 		if (!is_array($data['doc']['elem'])) {
 			return null;
 		}
 		foreach ($data['doc']['elem'] as $elem) {
 			if ($elem['name']['$'] == $currentName) {
-				return $elem['owner']['$'];
+				return $elem;
 			}
 		}
 		return null;
 	}
+
+	public function getSiteInfo(string $currentName): ?array
+	{
+		$result = [];
+		$data = $this->getWebdomain($currentName);
+		foreach ($data as $k => $val) {
+			if (is_array($val) && array_key_exists('$', $val)) {
+				$result[$k] = trim($val['$']);
+			} else {
+				$result[$k] = null;
+			}
+		}
+
+		$data = $this->command("site.edit", [
+			'elid' => $currentName,
+		]);
+		if (!is_array($data['doc'])) {
+			return null;
+		}
+		foreach ($data['doc'] as $k => $val) {
+			if (!str_starts_with($k, 'site_')) {
+				continue;
+			}
+			$index = substr($k, 5);
+			if (is_array($val) && array_key_exists('$', $val)) {
+				$result[$index] = trim($val['$']);
+			} else {
+				$result[$index] = null;
+			}
+		}
+		return $result;
+	}
+
+
 }

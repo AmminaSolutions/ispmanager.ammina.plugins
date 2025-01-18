@@ -1,0 +1,12 @@
+<VirtualHost {% $LISTEN_ON %}>
+{% if $REDIRECT == on %}
+	Redirect {% $STATUS %} {% $PATH %} [% $URL %]
+{% endif %}
+</VirtualHost>
+{% if $SSL == on %}
+<VirtualHost {% $LISTEN_ON_SSL %}>
+{% if $REDIRECT == on %}
+	Redirect {% $STATUS %} {% $PATH %} [% $URL %]
+{% endif %}
+</VirtualHost>
+{% endif %}

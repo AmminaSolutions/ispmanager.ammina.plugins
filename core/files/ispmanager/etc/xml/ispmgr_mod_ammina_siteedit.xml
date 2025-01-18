@@ -186,11 +186,6 @@
                 </field>
             </page>
         </form>
-        <summary>
-            <page name="bxsettings" img="gear_s">
-                <label name="bitrix_settings_note"/>
-            </page>
-        </summary>
     </metadata>
     <lang name="ru">
         <messages name="site.edit">

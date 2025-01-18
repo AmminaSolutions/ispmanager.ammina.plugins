@@ -1,0 +1,21 @@
+{% if $CREATE_DIRECTORY %}
+<Directory {% $LOCATION_PATH %}>
+
+__AD_LOCATION_PATH = [% $LOCATION_PATH %]
+__AD_SSI = [% $SSI %]
+__AD_CGI = [% $CGI %]
+__AD_CGI_EXT = [% $CGI_EXT %]
+__AD_PHP_MODE = [% $PHP_MODE %]
+__AD_ISP_CUT = [% $ISP_CUT %]
+__AD_REDIRECT_HTTP = [% $REDIRECT_HTTP %]
+
+</Directory>
+{% endif %}
+{% if $CREATE_STATDIR %}
+<Directory {% $STATDIR_LOCATION %}>
+
+__ADS_STATDIR_LOCATION = [% $STATDIR_LOCATION %]
+__ADS_WEBSTAT_ENCODING = [% $WEBSTAT_ENCODING %]
+
+</Directory>
+{% endif %}

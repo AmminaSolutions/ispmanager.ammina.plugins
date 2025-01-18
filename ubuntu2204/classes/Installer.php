@@ -2,12 +2,11 @@
 
 namespace AmminaISP\Ubuntu2204;
 
-use AmminaISP\Core\AbstractInstaller;
-use AmminaISP\Core\Console;
 use AmminaISP\Core\Exceptions\ISPManagerFeatureException;
+use AmminaISP\Core\InstallerAbstract;
 use AmminaISP\Core\ISPManager;
 
-class Installer extends AbstractInstaller
+class Installer extends InstallerAbstract
 {
 
 	/**

@@ -1,0 +1,57 @@
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	ssl_certificate [% $SSL_CRT_BUNDLE_PATH %];
+	ssl_certificate_key [% $SSL_KEY_PATH %];
+	ssl_ciphers EECDH:+AES256:-3DES:RSA+AES:!NULL:!RC4;
+	ssl_prefer_server_ciphers on;
+	ssl_protocols [% $SSL_SECURE_PROTOCOLS %];
+{% if $HSTS == on %}
+	add_header Strict-Transport-Security "max-age=31536000;";
+{% endif %}
+{% if $SSL_DHPARAM == 2048 %}
+	ssl_dhparam /etc/ssl/certs/dhparam2048.pem;
+{% elif $SSL_DHPARAM == 4096 %}
+	ssl_dhparam /etc/ssl/certs/dhparam4096.pem;
+{% endif %}
+	charset [% $CHARSET %];
+{% if $DIRINDEX != "" %}
+	index [% $DIRINDEX %];
+{% endif %}
+	disable_symlinks if_not_owner from=$root_path;
+	include {% $NGINX_VHOST_INCLUDES %};
+	include {% $INCLUDE_RESOURCE_PATH %};
+{% if $LOG_ACCESS == on %}
+	access_log {% $ACCESS_LOG_PATH %};
+{% elif $NO_TRAFF_COUNT == on %}
+	access_log off;
+{% endif %}
+{% if $LOG_ERROR == on %}
+	error_log {% $ERROR_LOG_PATH %} notice;
+{% else %}
+	error_log /dev/null crit;
+{% endif %}
+	set $root_path {% $VIRTUAL_DOCROOT %};
+{% if $AUTOSUBDOMAIN != off and $AUTOSUBDOMAIN != "" %}
+{% if $AUTOSUBDOMAIN == autosubdomain_dir %}
+	if ($host ~* ^((.*).{% $NAME %})$) {
+		set $subdomain $1;
+	}
+{% elif $AUTOSUBDOMAIN == autosubdomain_subdir %}
+	if ($host ~* ^((.*).{% $NAME %})$) {
+		set $subdomain $2;
+	}
+{% endif %}
+	set $subdomain {% $AUTOSUBDOMAIN_SUBDOMAIN_PART %};
+	root $root_path/$subdomain;
+{% else %}
+	root $root_path;
+{% endif %}
+	listen {% $NGINX_SSL_LISTEN_ON %} [% $LISTEN_SSL_FLAGS %];
+{% if $USER_RESOURCES %}
+	include {% $USER_NGINX_RESOURCES_PATH %};
+{% endif %}
+	location / {
+		error_page 403 /disabled/index.html;
+		deny all;
+	}
+}

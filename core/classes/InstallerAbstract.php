@@ -5,7 +5,7 @@ namespace AmminaISP\Core;
 use AmminaISP\Core\Exceptions\ISPManagerModuleException;
 use AmminaISP\Core\Exceptions\ISPManagerMysqlSettingException;
 
-abstract class AbstractInstaller
+abstract class InstallerAbstract
 {
 	public int $memorySize;
 	public int $cpuCore;
@@ -246,8 +246,6 @@ abstract class AbstractInstaller
 		$this->setTaskStart('install_files');
 		Console::showColoredString('Синхронизация файлов', 'light_green', null, true);
 		FilesSynchronizer::getInstance()->run(true);
-		Console::showColoredString('Генерация и синхронизация шаблонов конфигов', 'light_green', null, true);
-		TemplateSynchronizer::getInstance()->run(true);
 		$this->setTaskComplete('install_files');
 	}
 

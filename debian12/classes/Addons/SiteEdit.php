@@ -2,9 +2,9 @@
 
 namespace AmminaISP\Debian12\Addons;
 
-use AmminaISP\Core\Addons\AbstractSiteEdit;
+use AmminaISP\Core\Addons\SiteEditAbstract;
 
-class SiteEdit extends AbstractSiteEdit
+class SiteEdit extends SiteEditAbstract
 {
 
 }

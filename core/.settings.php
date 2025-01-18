@@ -14,6 +14,7 @@ return [
 		'DomainTTL' => '300',
 		'Option' => [
 			'ForceEnableNewSiteForm',
+			'DisableWebDBReadConf'
 		],
 	],
 	'features' => [

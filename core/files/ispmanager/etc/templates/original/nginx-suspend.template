@@ -1,0 +1,50 @@
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	charset [% $CHARSET %];
+{% if $DIRINDEX != "" %}
+	index [% $DIRINDEX %];
+{% endif %}
+	disable_symlinks if_not_owner from=$root_path;
+	include {% $NGINX_VHOST_INCLUDES %};
+	include {% $INCLUDE_RESOURCE_PATH %};
+{% if $LOG_ACCESS == on %}
+	access_log {% $ACCESS_LOG_PATH %};
+{% elif $NO_TRAFF_COUNT == on %}
+	access_log off;
+{% endif %}
+{% if $LOG_ERROR == on %}
+	error_log {% $ERROR_LOG_PATH %} notice;
+{% else %}
+	error_log /dev/null crit;
+{% endif %}
+{% if $REDIRECT_HTTP == on %}
+	return 301 https://$host:{% $SSL_PORT %}$request_uri;
+{% endif %}
+	set $root_path {% $VIRTUAL_DOCROOT %};
+{% if $AUTOSUBDOMAIN != off and $AUTOSUBDOMAIN != "" %}
+{% if $AUTOSUBDOMAIN == autosubdomain_dir %}
+	if ($host ~* ^((.*).{% $NAME %})$) {
+		set $subdomain $1;
+	}
+{% elif $AUTOSUBDOMAIN == autosubdomain_subdir %}
+	if ($host ~* ^((.*).{% $NAME %})$) {
+		set $subdomain $2;
+	}
+{% endif %}
+	set $subdomain {% $AUTOSUBDOMAIN_SUBDOMAIN_PART %};
+	root $root_path/$subdomain;
+{% else %}
+	root $root_path;
+{% endif %}
+	listen {% $NGINX_LISTEN_ON %} [% $LISTEN_FLAGS %];
+{% if $USER_RESOURCES %}
+	include {% $USER_NGINX_RESOURCES_PATH %};
+{% endif %}
+	location / {
+		error_page 403 /disabled/index.html;
+		deny all;
+	}
+}
+{% if $SSL == on %}
+{% import etc/templates/default/nginx-suspend-ssl.template %}
+{% endif %}

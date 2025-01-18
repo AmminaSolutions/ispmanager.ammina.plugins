@@ -8,12 +8,128 @@ use function AmminaISP\Core\boolToFlag;
 use function AmminaISP\Core\checkDirPath;
 use function AmminaISP\Core\findFile;
 
-abstract class AbstractSiteEdit extends AbstractAddon
+abstract class SiteEditAbstract extends AddonAbstract
 {
 	public ?string $nginxConfigName = null;
-	public ?string $nginxBackDir = null;
 	public ?string $siteOwner = null;
 	public ?string $siteIdnName = null;
+
+	public array $params = [
+		'site_platform' => [
+			'type' => 'string',
+			'ini' => 'platform',
+			'default' => 'default',
+		],
+		'site_bitrix_settings_20100' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_settings_20100',
+			'default' => false,
+		],
+		'site_bitrix_settings_b24' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_settings_b24',
+			'default' => false,
+		],
+		'site_bitrix_settings_pushserver' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_settings_pushserver',
+			'default' => false,
+		],
+		'site_bitrix_settings_composite' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_settings_composite',
+			'default' => false,
+		],
+		'site_bitrix_settings_multisite' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_settings_multisite',
+			'default' => false,
+		],
+		'site_bitrix_settings_multisite_main' => [
+			'type' => 'string',
+			'ini' => 'bitrix_settings_multisite_main',
+		],
+		'site_bitrix_settings_composer' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_settings_composer',
+			'default' => false,
+		],
+		'site_bitrix_operation_make_cron' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_operation_make_cron',
+			'default' => false,
+		],
+		'site_bitrix_operation_make_cache_memcached' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_operation_make_cache_memcached',
+			'default' => false,
+		],
+		'site_bitrix_operation_make_cache_redis' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_operation_make_cache_redis',
+			'default' => false,
+		],
+		'site_bitrix_operation_make_errorlog' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_operation_make_errorlog',
+			'default' => false,
+		],
+		'site_bitrix_modules_ammina_optimizer' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_modules_ammina_optimizer',
+			'default' => false,
+		],
+		'site_bitrix_modules_ammina_regions' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_modules_ammina_regions',
+			'default' => false,
+		],
+		'site_bitrix_modules_ammina_backup' => [
+			'type' => 'bool',
+			'ini' => 'bitrix_modules_ammina_backup',
+			'default' => false,
+		],
+		'site_seo_settings_deny_robots' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_deny_robots',
+			'default' => false,
+		],
+		'site_seo_settings_https' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_https',
+			'default' => true,
+		],
+		'site_seo_settings_www' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_www',
+			'default' => false,
+		],
+		'site_seo_settings_nowww' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_nowww',
+			'default' => false,
+		],
+		'site_seo_settings_slash' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_slash',
+			'default' => false,
+		],
+		'site_seo_settings_noslash' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_noslash',
+			'default' => false,
+		],
+		'site_seo_settings_noindex' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_noindex',
+			'default' => false,
+		],
+		'site_seo_settings_nomultislash' => [
+			'type' => 'bool',
+			'ini' => 'seo_settings_nomultislash',
+			'default' => false,
+		],
+	];
 
 	public function __construct()
 	{
@@ -25,84 +141,26 @@ abstract class AbstractSiteEdit extends AbstractAddon
 			$this->settingsFile = "site.{$this->siteIdnName}.ini";
 			$this->makeListMultisite();
 			$this->nginxConfigName = '/etc/nginx/vhosts/' . $this->siteOwner . "/" . $domainName . ".conf";
-			$this->nginxBackDir = '/etc/nginx/vhosts/' . $this->siteOwner . "/" . $domainName . ".back/";
 		}
 	}
 
 	public function openForm(): void
 	{
 		$this->dataAppend['use_php'] = boolToFlag($_SERVER['PARAM_site_handler'] == 'handler_php');
-		$this->dataAppend['site_platform'] = $this->fromIni('site_platform', 'default');
-
-		$this->dataAppend['site_bitrix_settings_20100'] = $this->fromIniFlag('site_bitrix_settings_20100', false);
-		$this->dataAppend['site_bitrix_settings_b24'] = $this->fromIniFlag('site_bitrix_settings_b24', false);
-		$this->dataAppend['site_bitrix_settings_pushserver'] = $this->fromIniFlag('site_bitrix_settings_pushserver', false);
-		$this->dataAppend['site_bitrix_settings_composite'] = $this->fromIniFlag('site_bitrix_settings_composite', false);
-		$this->dataAppend['site_bitrix_settings_multisite'] = $this->fromIniFlag('site_bitrix_settings_multisite', false);
-		$this->dataAppend['site_bitrix_settings_multisite_main'] = $this->fromIni('site_bitrix_settings_multisite_main', '');
-		$this->dataAppend['site_bitrix_settings_composer'] = $this->fromIniFlag('site_bitrix_settings_composer', true);
-
-		$this->dataAppend['site_bitrix_operation_make_cron'] = $this->fromIniFlag('site_bitrix_operation_make_cron', false);
-		$this->dataAppend['site_bitrix_operation_make_cache_memcached'] = $this->fromIniFlag('site_bitrix_operation_make_cache_memcached', false);
-		$this->dataAppend['site_bitrix_operation_make_cache_redis'] = $this->fromIniFlag('site_bitrix_operation_make_cache_redis', false);
-		$this->dataAppend['site_bitrix_operation_make_errorlog'] = $this->fromIniFlag('site_bitrix_operation_make_errorlog', false);
-
-		$this->dataAppend['site_bitrix_modules_ammina_optimizer'] = $this->fromIniFlag('site_bitrix_modules_ammina_optimizer', false);
-		$this->dataAppend['site_bitrix_modules_ammina_regions'] = $this->fromIniFlag('site_bitrix_modules_ammina_regions', false);
-		$this->dataAppend['site_bitrix_modules_ammina_backup'] = $this->fromIniFlag('site_bitrix_modules_ammina_backup', false);
-
-		$this->dataAppend['site_seo_settings_deny_robots'] = $this->fromIniFlag('site_seo_settings_deny_robots', false);
-		$this->dataAppend['site_seo_settings_https'] = $this->fromIniFlag('site_seo_settings_https', true);
-		$this->dataAppend['site_seo_settings_www'] = $this->fromIniFlag('site_seo_settings_www', false);
-		$this->dataAppend['site_seo_settings_nowww'] = $this->fromIniFlag('site_seo_settings_nowww', true);
-		$this->dataAppend['site_seo_settings_slash'] = $this->fromIniFlag('site_seo_settings_slash', false);
-		$this->dataAppend['site_seo_settings_noslash'] = $this->fromIniFlag('site_seo_settings_noslash', false);
-		$this->dataAppend['site_seo_settings_noindex'] = $this->fromIniFlag('site_seo_settings_noindex', false);
-		$this->dataAppend['site_seo_settings_nomultislash'] = $this->fromIniFlag('site_seo_settings_nomultislash', false);
-
-		$this->dataAppend['site_php_bin_wrapper_ammina'] = $this->phpFcgiWrapper(true);
-
-		if ($this->getFlagFromParam('site_platform_default') !== 'on') {
+		$this->fillDataAppendFromIni();
+		if ($this->getFromParam('site_platform') !== 'default') {
 			$this->xml = str_replace('<site_phpcomposer>on</site_phpcomposer>', '<site_phpcomposer>off</site_phpcomposer>', $this->xml);
 		}
+		$this->dataAppend['site_php_bin_wrapper_ammina'] = $this->phpFcgiWrapper(true);
 
 		$this->stringsAppend[] = '<slist name="site_platform"><msg>default</msg><msg>bitrix</msg><msg>laravel</msg></slist>';
 	}
 
 	public function saveForm(): void
 	{
-		if (file_exists($this->nginxConfigName)) {
-			checkDirPath($this->nginxBackDir);
-			file_put_contents($this->nginxBackDir . (new \DateTime())->format("Y_m_d_H_i_s_u") . '.back', file_get_contents($this->nginxConfigName));
-		}
-
-		$phpWrapper = $this->phpFcgiWrapper();
-		$_SERVER['PARAM_site_php_bin_wrapper_ammina'] = $phpWrapper;
-		$this
-			->setIniFromParam('site_platform')
-			->setIniFlagFromParam('site_bitrix_settings_20100')
-			->setIniFlagFromParam('site_bitrix_settings_b24')
-			->setIniFlagFromParam('site_bitrix_settings_pushserver')
-			->setIniFlagFromParam('site_bitrix_settings_composite')
-			->setIniFlagFromParam('site_bitrix_settings_multisite')
-			->setIniFromParam('site_bitrix_settings_multisite_main')
-			->setIniFlagFromParam('site_bitrix_settings_composer')
-			->setIniFlagFromParam('site_bitrix_operation_make_cron')
-			->setIniFlagFromParam('site_bitrix_operation_make_cache_memcached')
-			->setIniFlagFromParam('site_bitrix_operation_make_cache_redis')
-			->setIniFlagFromParam('site_bitrix_operation_make_errorlog')
-			->setIniFlagFromParam('site_bitrix_modules_ammina_optimizer')
-			->setIniFlagFromParam('site_bitrix_modules_ammina_regions')
-			->setIniFlagFromParam('site_bitrix_modules_ammina_backup')
-			->setIniFlagFromParam('site_seo_settings_deny_robots')
-			->setIniFlagFromParam('site_seo_settings_https')
-			->setIniFlagFromParam('site_seo_settings_www')
-			->setIniFlagFromParam('site_seo_settings_nowww')
-			->setIniFlagFromParam('site_seo_settings_slash')
-			->setIniFlagFromParam('site_seo_settings_noslash')
-			->setIniFlagFromParam('site_seo_settings_noindex')
-			->setIniFlagFromParam('site_seo_settings_nomultislash')
-			->saveIni();
+		$this->fillIniFromParams();
+		$this->saveIni();
+		$this->fillDataAppendFromIni();
 	}
 
 	protected function renderXml(bool $return = false): ?string

@@ -111,8 +111,8 @@ class FilesSynchronizer
 	{
 		[$files, $commands] = $this->findFilesFromRule($rule);
 		foreach ($files as $file) {
-			$content = file_get_contents($file['from']);
-			if (!file_exists($file['to']) || file_get_contents($file['to']) !== $content) {
+			$content = trim(file_get_contents($file['from']));
+			if (!file_exists($file['to']) || trim(file_get_contents($file['to'])) !== $content) {
 				checkDirPath($file['to']);
 				file_put_contents($file['to'], $content);
 				$this->findAfterCommands($file['rel'], $commands);
@@ -151,7 +151,6 @@ class FilesSynchronizer
 					$relPath = '/' . $relPath;
 				}
 				if ($file->getFilename() === '.service.command') {
-					$commands[dirname($relPath)] = [];
 					foreach (explode("\n", file_get_contents($file->getPathname())) as $lineCommand) {
 						$lineCommand = trim($lineCommand);
 						if ($lineCommand == '') {

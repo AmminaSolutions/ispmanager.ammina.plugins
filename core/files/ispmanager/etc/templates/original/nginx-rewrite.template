@@ -1,0 +1,15 @@
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+{% if $REDIRECT == on %}
+	rewrite {% $PATH %} [% $URL %] [% $FLAG %];
+{% endif %}
+}
+{% if $SSL == on %}
+server {
+	server_name {% $NAME %} [% $ALIASES %];
+	ssl_prefer_server_ciphers on;
+{% if $REDIRECT == on %}
+	rewrite {% $PATH %} [% $URL %] [% $FLAG %];
+{% endif %}
+}
+{% endif %}
