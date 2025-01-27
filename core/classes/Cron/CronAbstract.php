@@ -12,6 +12,7 @@ abstract class CronAbstract
 	protected string $pathApacheVhosts = '/etc/apache2/vhosts';
 	protected string $pathNginxVhosts = '/etc/nginx/vhosts';
 	protected string $apache2ConfigClass = '';
+	protected string $nginxConfigClass = '';
 
 	public static function getInstance(): static
 	{
@@ -37,7 +38,7 @@ abstract class CronAbstract
 	protected function runCycle(): void
 	{
 		$this->checkWebConfigApache();
-		//$this->checkWebConfigNginx();
+		$this->checkWebConfigNginx();
 	}
 
 	/**
@@ -78,7 +79,8 @@ abstract class CronAbstract
 	protected function checkWebConfigNginx(): void
 	{
 		foreach ($this->findConfFiles($this->pathNginxVhosts, 'conf') as $fileInfo) {
-
+			$checker = new $this->nginxConfigClass($fileInfo->getRealPath());
+			$checker->run();
 		}
 	}
 }

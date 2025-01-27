@@ -9,5 +9,6 @@ class Cron extends CronAbstract
 	public function __construct()
 	{
 		$this->apache2ConfigClass = Apache2Config::class;
+		$this->nginxConfigClass = NginxConfig::class;
 	}
 }

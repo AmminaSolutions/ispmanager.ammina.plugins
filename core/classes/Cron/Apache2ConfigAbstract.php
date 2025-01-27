@@ -1,10 +1,8 @@
 <?php
 
-
 namespace AmminaISP\Core\Cron;
 
 use AmminaISP\Core\TemplateGenerator;
-use function AmminaISP\Core\checkDirPath;
 
 abstract class Apache2ConfigAbstract extends WebConfigAbstract
 {
@@ -18,7 +16,9 @@ abstract class Apache2ConfigAbstract extends WebConfigAbstract
 	{
 		$resultFileName = "{$this->resultDir}/{$this->webdomainInfo['owner']}/{$this->webdomainInfo['name']}.conf";
 		$content = TemplateGenerator::getInstance()->run('apache2-vhost.php', $this->webdomainInfo);
-		$this->updateConfig($resultFileName, $content);
+		if ($this->updateConfig($resultFileName, $content)) {
+			$this->saveToOriginalConfig($resultFileName);
+		}
 	}
 
 

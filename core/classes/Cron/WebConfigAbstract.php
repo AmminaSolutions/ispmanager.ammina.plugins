@@ -47,7 +47,8 @@ abstract class WebConfigAbstract
 			}
 			$this->webdomainInfo['__'][$category][trim($arLine[0])] = $arLine[1];
 		}
-		//print_r($this->webdomainInfo);
+
+		print_r($this->webdomainInfo);
 	}
 
 	public function configTest(): bool
@@ -122,9 +123,9 @@ abstract class WebConfigAbstract
 	 * Обновляем конфиг
 	 * @param string $fileName
 	 * @param string $content
-	 * @return void
+	 * @return bool
 	 */
-	public function updateConfig(string $fileName, string $content): void
+	public function updateConfig(string $fileName, string $content): bool
 	{
 		checkDirPath($fileName);
 		$oldContent = null;
@@ -143,7 +144,27 @@ abstract class WebConfigAbstract
 			/**
 			 * @todo Добавить сообщение об ошибке
 			 */
+			return false;
 		}
+		return true;
+	}
+
+	public function saveToOriginalConfig(string $fileName, string $separator = '#START_CONFIG'): void
+	{
+		$mainFile = explode($separator, file_get_contents($this->filePath), 2);
+		$newConfig = file_get_contents($fileName);
+		if (count($mainFile) > 1) {
+			$mainFile = [
+				trim($newConfig),
+				trim($mainFile[1]),
+			];
+		} else {
+			$mainFile = [
+				trim($newConfig),
+				trim($mainFile[0]),
+			];
+		}
+		file_put_contents($this->filePath, implode("\n{$separator}\n", $mainFile));
 	}
 
 	abstract public function run(): void;

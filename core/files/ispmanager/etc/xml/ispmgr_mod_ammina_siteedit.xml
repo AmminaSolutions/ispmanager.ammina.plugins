@@ -17,6 +17,8 @@
                 </field>
                 <field name="site_platform" base="yes">
                     <select name="site_platform" type="radio">
+                        <if value="default" hide="site_redirect_www"/>
+                        <if value="default" hide="site_redirect_http"/>
                         <if value="default" hide="bitrix_settings"/>
                         <if value="default" hide="bitrix_operation"/>
                         <if value="default" hide="bitrix_modules"/>
@@ -24,6 +26,7 @@
 
                         <if value="laravel" hide="site_redirect_www"/>
                         <if value="laravel" hide="site_redirect_http"/>
+                        <if value="laravel" hide="site_semantic_url"/>
                         <if value="laravel" hide="database"/>
                         <if value="laravel" hide="site_script_selector"/>
                         <if value="laravel" hide="site_phpcomposer"/>
@@ -33,6 +36,7 @@
 
                         <if value="bitrix" hide="site_redirect_www"/>
                         <if value="bitrix" hide="site_redirect_http"/>
+                        <if value="bitrix" hide="site_semantic_url"/>
                         <if value="bitrix" hide="database"/>
                         <if value="bitrix" hide="site_script_selector"/>
                         <if value="bitrix" hide="site_phpcomposer"/>
@@ -50,6 +54,9 @@
                 </field>
                 <field name="site_bitrix_composite_memcached_pass">
                     <input type="hidden" name="site_bitrix_composite_memcached_pass"/>
+                </field>
+                <field name="site_php_version">
+                    <input type="hidden" name="site_php_version"/>
                 </field>
             </page>
             <page name="laravel_settings">

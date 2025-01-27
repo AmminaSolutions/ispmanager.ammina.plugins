@@ -148,12 +148,10 @@ abstract class SiteEditAbstract extends AddonAbstract
 	{
 		$this->dataAppend['use_php'] = boolToFlag($_SERVER['PARAM_site_handler'] == 'handler_php');
 		$this->fillDataAppendFromIni();
+		$this->fillDataAppendFromParams();
 		if ($this->getFromParam('site_platform') !== 'default') {
 			$this->xml = str_replace('<site_phpcomposer>on</site_phpcomposer>', '<site_phpcomposer>off</site_phpcomposer>', $this->xml);
 		}
-		$this->dataAppend['site_php_bin_wrapper_ammina'] = $this->phpFcgiWrapper(true);
-
-		$this->stringsAppend[] = '<slist name="site_platform"><msg>default</msg><msg>bitrix</msg><msg>laravel</msg></slist>';
 	}
 
 	public function saveForm(): void
@@ -161,6 +159,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 		$this->fillIniFromParams();
 		$this->saveIni();
 		$this->fillDataAppendFromIni();
+		$this->fillDataAppendFromParams();
 	}
 
 	protected function renderXml(bool $return = false): ?string
@@ -283,5 +282,96 @@ abstract class SiteEditAbstract extends AddonAbstract
 		$phpVersion = $this->phpVersion();
 		$phpVersionNum = substr($phpVersion, 7);
 		return "/opt/php{$phpVersionNum}/bin/php";
+	}
+
+	protected function fillDataAppendFromParams(): void
+	{
+		$this->dataAppend['site_php_bin_wrapper_ammina'] = $this->phpFcgiWrapper(true);
+		$this->dataAppend['site_php_version'] = substr($this->phpVersion(), 7);
+		$this->stringsAppend[] = '<slist name="site_platform"><msg>default</msg><msg>bitrix</msg><msg>laravel</msg></slist>';
+		if ($this->dataAppend['site_platform'] === 'bitrix' && $this->dataAppend['site_bitrix_settings_composite']==='on') {
+			$mapFileName = "/etc/nginx/amminaisp/maps/_" . Utils::idn_to_ascii($this->getFromParam('site_name')) . ".conf";
+			$compositeVariableSuffix = substr(md5($this->getFromParam('site_name')), 0, 4) . substr(crc32($this->getFromParam('site_name')), 0, 2);
+			$docRoot = $this->getFromParam('site_home');
+			if (file_exists($docRoot . "/bitrix/html_pages/.enabled") && file_exists($docRoot . "/bitrix/html_pages/.config.php")) {
+				$extParams = $this->makeCompositeConfig($mapFileName, $compositeVariableSuffix, $docRoot . "/bitrix/html_pages/.config.php");
+				$this->dataAppend['site_bitrix_composite_var_suffix'] = $compositeVariableSuffix;
+				$this->dataAppend['site_bitrix_composite_memcached'] = $extParams['memcached'];
+				$this->dataAppend['site_bitrix_composite_memcached_pass'] = $extParams['memcached_pass'];
+			} else {
+				if (file_exists($mapFileName)) {
+					@unlink($mapFileName);
+				}
+			}
+		}
+	}
+
+	protected function makeCompositeConfig($mapFileName, $compositeVariableSuffix, $bitrixCompositeConfig): array
+	{
+		$arHTMLPagesOptions = [];
+		@include($bitrixCompositeConfig);
+		$data = [];
+		$hosts = [];
+		foreach ($arHTMLPagesOptions['DOMAINS'] as $domain) {
+			$hosts[] = '"' . $domain . '" "1";';
+		}
+		$data[] = 'map $host $config_domain_' . $compositeVariableSuffix . ' {
+          hostnames;
+          default "0";
+          ' . implode("\n", $hosts) . '
+        }';
+
+		$arIncludePath = [];
+		foreach ($arHTMLPagesOptions['~INCLUDE_MASK'] as $mask) {
+			if (str_starts_with($mask, "'")) {
+				$mask = substr($mask, 1);
+			}
+			if (str_ends_with($mask, "'")) {
+				$mask = substr($mask, 0, strlen($mask) - 1);
+			}
+			$arIncludePath[] = '"~*' . $mask . '" "1";';
+		}
+		$data[] = 'map $uri $is_include_uri_' . $compositeVariableSuffix . ' {
+          default  "0";
+          ' . implode("\n", $arIncludePath) . '
+        }';
+
+		$arExcludePath = [];
+		foreach ($arHTMLPagesOptions['~EXCLUDE_MASK'] as $mask) {
+			if (str_starts_with($mask, "'")) {
+				$mask = substr($mask, 1);
+			}
+			if (str_ends_with($mask, "'")) {
+				$mask = substr($mask, 0, strlen($mask) - 1);
+			}
+			$arExcludePath[] = '"~*' . $mask . '" "0";';
+		}
+		$data[] = 'map $uri $not_exclude_uri_' . $compositeVariableSuffix . ' {
+          default  "1";
+          ' . implode("\n", $arExcludePath) . '
+        }';
+
+		$arExcludeParams = [];
+		foreach ($arHTMLPagesOptions['~EXCLUDE_PARAMS'] as $param) {
+			$arExcludeParams[] = '"~' . $param . '" "0";';
+		}
+		$data[] = 'map $args $not_exclude_params_' . $compositeVariableSuffix . ' {
+          default  "1";
+          ' . implode("\n", $arExcludeParams) . '
+        }';
+
+		$data[] = 'map "${config_domain_' . $compositeVariableSuffix . '}${is_include_uri_' . $compositeVariableSuffix . '}${not_exclude_uri_' . $compositeVariableSuffix . '}${not_exclude_params_' . $compositeVariableSuffix . '}" $is_site_composite_' . $compositeVariableSuffix . ' {
+          default   "1";
+          ~0        "0";
+        }';
+		checkDirPath($mapFileName);
+		file_put_contents($mapFileName, implode("\n\n", $data));
+		$result = [
+			'memcached' => ($arHTMLPagesOptions['STORAGE'] == "memcached" ? "on" : "off"),
+		];
+		if ($arHTMLPagesOptions['STORAGE'] == "memcached") {
+			$result['memcached_pass'] = ($arHTMLPagesOptions['MEMCACHED_PORT'] > 0 ? $arHTMLPagesOptions['MEMCACHED_HOST'] . ":" . $arHTMLPagesOptions['MEMCACHED_PORT'] : str_replace("unix:///", "unix:/", $arHTMLPagesOptions['MEMCACHED_HOST']));
+		}
+		return $result;
 	}
 }
