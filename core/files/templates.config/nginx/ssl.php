@@ -18,3 +18,6 @@ if ((int)$this->param('|NV|') === 2048) {
 <? } elseif ((int)$this->param('|NV|SSL_DHPARAM') === 4096) { ?>
 	ssl_dhparam /etc/ssl/certs/dhparam4096.pem;
 <? }
+?>
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;

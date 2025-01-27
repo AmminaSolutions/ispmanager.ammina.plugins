@@ -16,16 +16,17 @@ add_header X-Frame-Options $setSameOrigin;
 
 location ~* /\.ht  { deny all; }
 location ~* /\.(svn|hg|git) { deny all; }
-location ~* ^/bitrix/(modules|local_cache|stack_cache|managed_cache|php_interface) {
-deny all;
-}
-location ~* ^/local/(modules|php_interface) {
-deny all;
-}
+location ~* ^/bitrix/(modules|local_cache|stack_cache|managed_cache|php_interface|cache) { deny all; }
+location ~* ^/bitrix/\.settings\.php { deny all; }
+location ~* ^/bitrix/\.settings_extra\.php { deny all; }
+location ~* ^/local/(modules|php_interface) { deny all; }
 location ~* ^/upload/1c_[^/]+/ { deny all; }
 location ~* /\.\./ { deny all; }
 location ~* ^/bitrix/html_pages/\.config\.php { deny all; }
 location ~* ^/bitrix/html_pages/\.enabled { deny all; }
+location ~* ^/upload/.+\.svg$ {
+	add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+}
 location ^~ /upload/support/not_image   { internal; }
 
 error_page 403 /403.html;
@@ -143,6 +144,13 @@ if ($this->param('bitrix_composite_memcached') === 'on') {
 		}
 		<?
 	} else { ?>
+		<? if ($this->param('bitrix_settings_composite') === 'on') { ?>
+			if ($use_composite_cache = "ABCD") {
+			add_header X-Bitrix-Composite "Nginx (file)";
+			rewrite .* /$composite_cache last;
+			}
+			<?
+		} ?>
 		error_page     404 405 412 502 504 = @bitrix;
 		try_files       $uri $uri/ @bitrix;
 		<?
@@ -161,6 +169,7 @@ types {
 text/plain text/plain php php3 php4 php5 php6 phtml pl asp aspx cgi dll exe ico shtm shtml fcg fcgi fpl asmx pht py psp rb var;
 }
 }
+
 <? if ($this->param('|NV|REDIRECT_TO_APACHE') === 'on') { ?>
 	location @bitrix{
 	proxy_pass <?= $this->param('|NV|BACKEND_BIND_URI') ?>;
@@ -169,6 +178,12 @@ text/plain text/plain php php3 php4 php5 php6 phtml pl asp aspx cgi dll exe ico 
 	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 	proxy_set_header X-Forwarded-Proto $scheme;
 	proxy_set_header X-Forwarded-Port $server_port;
+	proxy_set_header X-Real-IP $remote_addr;
+	<? if ($this->param('|NV|SSL') === 'on') { ?>
+		proxy_set_header HTTPS YES;
+		<?
+	}
+	?>
 	access_log off;
 	}
 	<?
@@ -272,6 +287,12 @@ access_log off;
 			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 			proxy_set_header X-Forwarded-Proto $scheme;
 			proxy_set_header X-Forwarded-Port $server_port;
+			proxy_set_header X-Real-IP $remote_addr;
+			<? if ($this->param('|NV|SSL') === 'on') { ?>
+				proxy_set_header HTTPS YES;
+				<?
+			}
+			?>
 			access_log off;
 			<?
 		}
@@ -309,17 +330,174 @@ error_page 404 /404.html;
 location ~* ^/bitrix/cache { deny all; }
 
 location ^~ /upload/bx_cloud_upload/ {
-location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:]+)\.(s3|s3-us-west-1|s3-eu-west-1|s3-ap-southeast-1|s3-ap-northeast-1)\.amazonaws\.com/(.+)$ {
+# Amazon
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.(s3|af-south-1|ap-east-1|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ap-northeast-1|ap-northeast-2|ap-northeast-3|ca-central-1|ca-west-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-west-1|eu-west-2|eu-west-3|eu-south-1|eu-south-2|eu-north-1|il-central-1|me-south-1|me-central-1|sa-east-1|us-east-1|us-east-2|us-west-1|us-west-2|us-gov-east-1|us-gov-west-1)\.amazonaws\.com/([^\s]+)$ {
 internal;
-resolver 8.8.8.8;
+resolver 8.8.8.8 ipv6=off;
 proxy_method GET;
-proxy_set_header    X-Real-IP               $remote_addr;
-proxy_set_header    X-Forwarded-For         $proxy_add_x_forwarded_for;
-proxy_set_header    X-Forwarded-Server      $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
 #proxy_max_temp_file_size 0;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
 proxy_pass $1://$2.$3.amazonaws.com/$4;
 }
-location ~* .*$       { deny all; }
+# Rackspace
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.([^/:\s]+)\.([^/:\s]+)\.rackcdn\.com/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+#proxy_max_temp_file_size 0;
+proxy_pass $1://$2.$3.$4.rackcdn.com/$5;
+}
+# Clodo
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru\:(80|443)/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+#proxy_max_temp_file_size 0;
+proxy_pass $1://$2.clodo.ru:$3/$4;
+}
+# Google
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.commondatastorage\.googleapis\.com/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+#proxy_max_temp_file_size 0;
+proxy_pass $1://$2.commondatastorage.googleapis.com/$3;
+}
+# Selectel
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selcdn\.ru/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+#proxy_max_temp_file_size 0;
+proxy_pass $1://$2.selcdn.ru/$3;
+}
+# Selectel as S3 compatible storage
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.selstorage\.ru/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+#proxy_max_temp_file_size 0;
+proxy_pass $1://$2.selstorage.ru/$3;
+}
+# Yandex
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.storage\.yandexcloud\.net/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+#proxy_max_temp_file_size 0;
+proxy_pass $1://$2.storage.yandexcloud.net/$3;
+}
+# Yandex second option
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.storage\.yandexcloud\.net/([^\s].+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+#proxy_max_temp_file_size 0;
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+proxy_pass $1://storage.yandexcloud.net/$2;
+}
+# HotBox
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.hb\.bizmrg\.com/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+#proxy_max_temp_file_size 0;
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+proxy_pass $1://$2.hb.bizmrg.com/$3;
+}
+# HotBox
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.hb\.bizmrg\.com/([^\s].+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+#proxy_max_temp_file_size 0;
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+proxy_pass $1://hb.bizmrg.com/$2;
+}
+# Clodo.ru
+location ~ ^/upload/bx_cloud_upload/(http[s]?)\.([^/:\s]+)\.clodo\.ru/([^\s]+)$ {
+internal;
+resolver 8.8.8.8 ipv6=off;
+proxy_method GET;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Server $host;
+more_clear_input_headers 'Authorization';
+#proxy_max_temp_file_size 0;
+proxy_set_header "cookie" "";
+proxy_set_header "content-type" "";
+proxy_set_header "content-length" "";
+proxy_pass $1://$2.clodo.ru/$3;
+}
+location ~* .*$ {
+deny all;
+}
 }
 
 location ~* ^.+\.(jpg|jpeg|gif|png|svg|js|css|mp3|ogg|mpe?g|avi|zip|gz|bz2?|rar|swf|webp|woff2|woff|ttf|otf|eot|ico|webp|mp4|webm)$ {
