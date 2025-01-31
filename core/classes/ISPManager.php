@@ -1113,6 +1113,22 @@ class ISPManager
 		return null;
 	}
 
+	public function getWebdomains(): array
+	{
+		$result = [];
+		$data = $this->command("webdomain", []);
+		if (!is_array($data['doc']['elem'])) {
+			return [];
+		}
+		foreach ($data['doc']['elem'] as $elem) {
+			$result[] = [
+				'name' => $elem['name']['$'],
+				'owner' => $elem['owner']['$'],
+			];
+		}
+		return $result;
+	}
+
 	public function getSiteInfo(string $currentName): ?array
 	{
 		$result = [];
@@ -1145,5 +1161,151 @@ class ISPManager
 		return $result;
 	}
 
+	public function getSiteDocroot(string $currentName): ?string
+	{
+		$siteInfo = $this->getWebdomain($currentName);
+		if (!is_array($siteInfo) || empty($siteInfo['docroot']['$'])) {
+			return null;
+		}
+		return $siteInfo['docroot']['$'];
+	}
 
+	public function getListDatabases(): array
+	{
+		$result = [];
+		$data = $this->command('db');
+		if (isset($data['doc']['elem']) && is_array($data['doc']['elem'])) {
+			foreach ($data['doc']['elem'] as $k => $v) {
+				$result[$v['name']['$']] = [
+					'name' => $v['name']['$'],
+					'owner' => $v['owner']['$'],
+				];
+			}
+		}
+		return $result;
+	}
+
+	public function getDatabasesUtfList(): array
+	{
+		$result = [];
+		$data = $this->command("db.edit", []);
+		foreach ($data['doc']['slist'] as $valList) {
+			if ($valList['$name'] == 'charset') {
+				foreach ($valList['val'] as $val) {
+					if (str_starts_with($val['$key'], 'utf8')) {
+						$result[] = $val['$key'];
+					}
+				}
+			}
+		}
+		return $result;
+	}
+
+	public function makeMysqlDatabase(string $name, string $owner, string $charset, string $password): bool
+	{
+		$params = [
+			"name" => $name,
+			"owner" => $owner,
+			"server" => "MySQL",
+			"charset" => $charset,
+			"user" => "*",
+			"username" => $name,
+			"password" => '"' . $password . '"',
+			"remote_access" => "off",
+			"clicked_button" => "ok",
+			"sok" => "ok",
+		];
+		$res = $this->command("db.edit", $params);
+		return true;
+	}
+
+	public function getUserScheduler(string $user): array
+	{
+		$result = [];
+		$data = $this->command("scheduler", ["su" => $user]);
+		if (!is_array($data['doc']['elem'])) {
+			return [];
+		}
+		foreach ($data['doc']['elem'] as $arJob) {
+			$result[] = [
+				'command' => $arJob['command']['$'],
+				'active' => $arJob['active']['$'] === 'on',
+				'key' => $arJob['key']['$'],
+			];
+		}
+		return $result;
+	}
+
+	public function schedulerDelete(string $user, string $key): void
+	{
+		$this->command("scheduler.delete", ["su" => $user, "elid" => $key, "sok" => "ok"]);
+	}
+
+	public function schedulerSuspend(string $user, string $key): void
+	{
+		$this->command("scheduler.suspend", ["su" => $user, "elid" => $key, "sok" => "ok"]);
+	}
+
+	public function schedulerAdd(string $user, string $command, string $minute = '*', string $hour = '*', string $dmonth = '*', string $month = '*', string $dweek = '*'): void
+	{
+		$this->command("scheduler.edit", ["su" => $user, "command" => $command, 'schedule_type' => 'type_expert', 'input_min' => $minute, 'input_hour' => $hour, 'input_dmonth' => $dmonth, 'input_month' => $month, 'input_dweek' => $dweek, "active" => "on", "sok" => "ok"]);
+	}
+
+	public function getMemcachedOptions(): ?array
+	{
+		$result = [];
+		$data = $this->command("ammina_memcached");
+		if (!is_array($data['doc'])) {
+			return null;
+		}
+		$result['issocket'] = $data['doc']['ammina_issocket']['$'] === 'on';
+		$result['cachesize'] = $data['doc']['ammina_cachesize']['$'];
+		$result['maxconn'] = $data['doc']['ammina_maxconn']['$'];
+		return $result;
+	}
+
+	public function getRedisOptions(): ?array
+	{
+		$result = [];
+		$data = $this->command("ammina_redis");
+		if (!is_array($data['doc'])) {
+			return null;
+		}
+		$result['issocket'] = $data['doc']['ammina_issocket']['$'] === 'on';
+		$result['databases'] = $data['doc']['ammina_databases']['$'];
+		$result['memorylimit'] = $data['doc']['ammina_memorylimit']['$'];
+		return $result;
+	}
+
+	public function makeRedisMonitoring(string $name, string $pid): void
+	{
+		$data = $this->command('services');
+		$finded = false;
+		foreach ($data['doc']['elem'] as $v) {
+			if ($v['name']['$'] == $name) {
+				$finded = true;
+			}
+		}
+		if (!$finded) {
+			$this->command('services.setbin', ["elid" => $name, "name" => $name, "bin" => $name, "pid" => $pid, "restart" => "restart", "clicked_button" => "ok", "sok" => "ok"]);
+			$this->command('services.enable', ["elid" => $name]);
+			$this->command('monitoring.add', ["elid" => $name, "service_name" => $name, "service_process_name" => $name, "service_type" => "unknown", "custom" => "off", "service_select_ip" => "127.0.0.1", "service_select_port" => "6379", "clicked_button" => "ok", "sok" => "ok"]);
+		}
+	}
+
+	public function makeMemcachedMonitoring(string $name, string $pid): void
+	{
+		$data = $this->command('services');
+		$finded = false;
+		foreach ($data['doc']['elem'] as $v) {
+			if ($v['name']['$'] == $name) {
+				$finded = true;
+			}
+		}
+		if (!$finded) {
+			$this->command('services.setbin', ["elid" => $name, "name" => $name, "bin" => $name, "pid" => $pid, "restart" => "restart", "clicked_button" => "ok", "sok" => "ok"]);
+			$this->command('services.enable', ["elid" => $name]);
+			$this->command('monitoring.add', ["elid" => $name, "service_name" => $name, "service_process_name" => $name, "service_type" => "unknown", "custom" => "off", "service_select_ip" => "127.0.0.1", "service_select_port" => "11211", "clicked_button" => "ok", "sok" => "ok"]);
+		}
+	}
 }

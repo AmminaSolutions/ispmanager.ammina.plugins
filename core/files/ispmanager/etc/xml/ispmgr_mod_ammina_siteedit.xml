@@ -99,6 +99,7 @@
                         <if value="on" hide="site_bitrix_operation_make_cache_memcached" shadow="yes"/>
                         <if value="on" hide="site_bitrix_operation_make_cache_redis" shadow="yes"/>
                         <if value="on" hide="site_bitrix_operation_make_errorlog" shadow="yes"/>
+                        <if value="on" hide="site_bitrix_settings_composer" shadow="yes"/>
                     </input>
                 </field>
                 <field name="site_bitrix_settings_multisite_main">

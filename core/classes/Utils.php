@@ -28,7 +28,33 @@ class Utils
 			"COMMAND" => $strCommand,
 			"OPTIONS" => $arOptions,
 		];
-		file_put_contents($strPath . microtime(true) . "." . rand(10, 10000000) . ".command", serialize($arData));
+		$time = explode(' ', microtime());
+		$time = $time[1] . '.' . substr($time[0], 2);
+		file_put_contents($strPath . $time . "." . rand(10, 10000000) . ".command", serialize($arData));
+	}
+
+	public static function getAllJob(): array
+	{
+		$result = [];
+		$basePath = $_SERVER['DOCUMENT_ROOT'] . "/.local/cronjob/";
+		$directory = new \RecursiveDirectoryIterator($basePath, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_FILEINFO);
+		$iterator = new \RecursiveIteratorIterator($directory);
+		/**
+		 * @var \SplFileInfo $file
+		 */
+		foreach ($iterator as $file) {
+			if (!$file->isFile()) {
+				continue;
+			}
+			if ($file->getExtension() !== 'command') {
+				continue;
+			}
+			if (($file->getCTime() + 15) < time()) {
+				$result[$file->getFilename()] = $file->getPathname();
+			}
+		}
+		ksort($result, SORT_NATURAL);
+		return $result;
 	}
 
 	public static function boolToFlag(bool $value): string
@@ -102,5 +128,45 @@ class Utils
 			}
 		}
 		return $result;
+	}
+
+	public static function randString($length = 10, $extendsChars = ''): string
+	{
+		$allChars = "abcdefghijklnmopqrstuvwxyzABCDEFGHIJKLNMOPQRSTUVWXYZ0123456789" . $extendsChars;
+		$result = "";
+		for ($i = 0; $i < $length; $i++) {
+			$result .= $allChars[rand(0, strlen($allChars) - 1)];
+		}
+		return $result;
+	}
+
+	public static function translitString(string $value): string
+	{
+		$translitFrom = "а,б,в,г,д,е,ё,ж,з,и,й,к,л,м,н,о,п,р,с,т,у,ф,х,ц,ч,ш,щ,ъ,ы,ь,э,ю,я,А,Б,В,Г,Д,Е,Ё,Ж,З,И,Й,К,Л,М,Н,О,П,Р,С,Т,У,Ф,Х,Ц,Ч,Ш,Щ,Ъ,Ы,Ь,Э,Ю,Я,і,І,ї,Ї,ґ,Ґ";
+		$translitTo = "a,b,v,g,d,e,ye,zh,z,i,y,k,l,m,n,o,p,r,s,t,u,f,kh,ts,ch,sh,shch,,y,,e,yu,ya,A,B,V,G,D,E,YE,ZH,Z,I,Y,K,L,M,N,O,P,R,S,T,U,F,KH,TS,CH,SH,SHCH,,Y,,E,YU,YA,i,I,i,I,g,G";
+		$from = explode(",", $translitFrom);
+		$to = explode(",", $translitTo);
+		$replace = [];
+		foreach ($from as $k => $v) {
+			$replace[$v] = $to[$k];
+		}
+		$result = '';
+		for ($i = 0, $iMax = strlen($value); $i < $iMax; $i++) {
+			$char = substr($value, $i, 1);
+			if (isset($replace[$char])) {
+				$result .= $replace[$char];
+			} else {
+				if (preg_match("/[a-zA-Z0-9]/u", $char)) {
+					$result .= $char;
+				}
+			}
+		}
+		return $result;
+	}
+
+	public static function getUserHomeDir(string $user): ?string
+	{
+		$result = exec("getent passwd {$user} | cut -d: -f6");
+		return (empty($result) ? null : $result);
 	}
 }

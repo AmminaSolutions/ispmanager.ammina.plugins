@@ -47,8 +47,6 @@ abstract class WebConfigAbstract
 			}
 			$this->webdomainInfo['__'][$category][trim($arLine[0])] = $arLine[1];
 		}
-
-		print_r($this->webdomainInfo);
 	}
 
 	public function configTest(): bool
@@ -165,6 +163,33 @@ abstract class WebConfigAbstract
 			];
 		}
 		file_put_contents($this->filePath, implode("\n{$separator}\n", $mainFile));
+	}
+
+	public function getExistsConfig(): array
+	{
+		$result = [];
+		$directory = new \RecursiveDirectoryIterator($this->resultDir, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_FILEINFO);
+		$iterator = new \RecursiveIteratorIterator($directory);
+		/**
+		 * @var \SplFileInfo $file
+		 */
+		foreach ($iterator as $file) {
+			if (!$file->isFile()) {
+				continue;
+			}
+			if ($file->getExtension() !== 'conf') {
+				continue;
+			}
+			$domain = $file->getBasename('.conf');
+			$owner = $file->getPath();
+			$owner = substr($owner, strrpos($owner, '/') + 1);
+			$result[] = [
+				'domain' => $domain,
+				'owner' => $owner,
+				'path' => $file->getPathname(),
+			];
+		}
+		return $result;
 	}
 
 	abstract public function run(): void;

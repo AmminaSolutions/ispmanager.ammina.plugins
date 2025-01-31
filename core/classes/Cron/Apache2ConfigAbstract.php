@@ -21,5 +21,4 @@ abstract class Apache2ConfigAbstract extends WebConfigAbstract
 		}
 	}
 
-
 }

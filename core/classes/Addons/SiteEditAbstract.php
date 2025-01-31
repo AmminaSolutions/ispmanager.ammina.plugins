@@ -2,8 +2,10 @@
 
 namespace AmminaISP\Core\Addons;
 
+use AmminaISP\Core\FilesSynchronizer;
 use AmminaISP\Core\ISPManager;
 use AmminaISP\Core\Utils;
+use function AmminaISP\Core\addJob;
 use function AmminaISP\Core\boolToFlag;
 use function AmminaISP\Core\checkDirPath;
 use function AmminaISP\Core\findFile;
@@ -134,7 +136,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 	public function __construct()
 	{
 		parent::__construct();
-		$domainName = $_SERVER['PARAM_site_name'] ?? '';
+		$domainName = $this->getFromParam('site_name') ?? '';
 		if ($domainName !== '') {
 			$this->siteOwner = ISPManager::getInstance()->getWebdomainOwner($domainName);
 			$this->siteIdnName = Utils::idn_to_ascii($domainName);
@@ -146,7 +148,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 
 	public function openForm(): void
 	{
-		$this->dataAppend['use_php'] = boolToFlag($_SERVER['PARAM_site_handler'] == 'handler_php');
+		$this->dataAppend['use_php'] = boolToFlag($this->getFromParam('site_handler') == 'handler_php');
 		$this->fillDataAppendFromIni();
 		$this->fillDataAppendFromParams();
 		if ($this->getFromParam('site_platform') !== 'default') {
@@ -159,7 +161,9 @@ abstract class SiteEditAbstract extends AddonAbstract
 		$this->fillIniFromParams();
 		$this->saveIni();
 		$this->fillDataAppendFromIni();
+		$this->phpFcgiWrapper();
 		$this->fillDataAppendFromParams();
+		$this->checkOperations();
 	}
 
 	protected function renderXml(bool $return = false): ?string
@@ -245,7 +249,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 					@unlink($filePath);
 				}
 			}
-			if ($this->getFlagFromParam('site_platform') !== 'default') {
+			if ($this->getFromParam('site_platform') !== 'default') {
 				checkDirPath($wrapperFilePath);
 				file_put_contents($wrapperFilePath, $wrapperContent);
 				chmod($wrapperFilePath, 0555);
@@ -289,7 +293,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 		$this->dataAppend['site_php_bin_wrapper_ammina'] = $this->phpFcgiWrapper(true);
 		$this->dataAppend['site_php_version'] = substr($this->phpVersion(), 7);
 		$this->stringsAppend[] = '<slist name="site_platform"><msg>default</msg><msg>bitrix</msg><msg>laravel</msg></slist>';
-		if ($this->dataAppend['site_platform'] === 'bitrix' && $this->dataAppend['site_bitrix_settings_composite']==='on') {
+		if ($this->dataAppend['site_platform'] === 'bitrix' && $this->dataAppend['site_bitrix_settings_composite'] === 'on') {
 			$mapFileName = "/etc/nginx/amminaisp/maps/_" . Utils::idn_to_ascii($this->getFromParam('site_name')) . ".conf";
 			$compositeVariableSuffix = substr(md5($this->getFromParam('site_name')), 0, 4) . substr(crc32($this->getFromParam('site_name')), 0, 2);
 			$docRoot = $this->getFromParam('site_home');
@@ -373,5 +377,118 @@ abstract class SiteEditAbstract extends AddonAbstract
 			$result['memcached_pass'] = ($arHTMLPagesOptions['MEMCACHED_PORT'] > 0 ? $arHTMLPagesOptions['MEMCACHED_HOST'] . ":" . $arHTMLPagesOptions['MEMCACHED_PORT'] : str_replace("unix:///", "unix:/", $arHTMLPagesOptions['MEMCACHED_HOST']));
 		}
 		return $result;
+	}
+
+	protected function checkOperations(): void
+	{
+		if ($this->getFromParam('site_platform') === 'bitrix') {
+			if ($this->getFlagFromParam('site_bitrix_settings_multisite') !== 'on') {
+				if ($this->getFlagFromParam('site_bitrix_operation_make_skeleton') === 'on') {
+					$this->makeBitrixSkeleton();
+				}
+				if ($this->getFlagFromParam('site_bitrix_operation_make_database') === 'on') {
+					$this->makeBitrixDatabase(trim($this->getFromParam('site_bitrix_operation_make_database_name')));
+				}
+
+				if ($this->getFlagFromParam('site_bitrix_operation_make_cron') === 'on') {
+					$this->makeBitrixCron();
+				}
+				if ($this->getFlagFromParam('site_bitrix_operation_make_cache_memcached') === 'on') {
+					$this->makeBitrixCacheMemcached();
+				}
+				if ($this->getFlagFromParam('site_bitrix_operation_make_cache_redis') === 'on') {
+					$this->makeBitrixCacheRedis();
+				}
+				if ($this->getFlagFromParam('site_bitrix_operation_make_errorlog') === 'on') {
+					$this->makeBitrixErrorLog();
+				}
+				if ($this->getFlagFromParam('site_bitrix_settings_composer') === 'on') {
+					$this->makeBitrixComposer();
+				}
+			}
+
+			if ($this->getFlagFromParam('site_bitrix_settings_multisite') === 'on' && strlen($this->getFromParam('site_bitrix_settings_multisite_main')) > 0) {
+				$this->makeBitrixMultisite($this->getFromParam('site_bitrix_settings_multisite_main'));
+			}
+			$this->makeBitrixCommands();
+		}
+	}
+
+	protected function makeBitrixSkeleton(): void
+	{
+		addJob("ammina.bitrix.skeleton", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixDatabase(?string $databaseName = null): void
+	{
+		if (empty($databaseName)) {
+			$databaseName = null;
+		}
+		addJob("ammina.bitrix.makedb", [
+			'name' => $databaseName,
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+			'charset' => $this->getFromParam('site_charset'),
+		]);
+	}
+
+	protected function makeBitrixMultisite(string $mainSite): void
+	{
+		addJob("ammina.bitrix.multisite", [
+			'mainSite' => $mainSite,
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixCron(): void
+	{
+		addJob("ammina.bitrix.cron", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixCacheMemcached(): void
+	{
+		addJob("ammina.bitrix.cache.memcached", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixCacheRedis(): void
+	{
+		addJob("ammina.bitrix.cache.redis", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixErrorLog(): void
+	{
+		addJob("ammina.bitrix.error.log", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixComposer(): void
+	{
+		addJob("ammina.bitrix.composer", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrixCommands(): void
+	{
+		addJob("ammina.bitrix.commands", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
 	}
 }
