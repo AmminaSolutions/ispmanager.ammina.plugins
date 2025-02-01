@@ -37,7 +37,6 @@ abstract class CronAbstract
 		if ($this->checkUpdate()) {
 			return;
 		}
-		return;
 		$this->checkDeletedDomains();
 		$this->runCycle();
 		return;
