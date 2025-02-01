@@ -34,6 +34,10 @@ abstract class CronAbstract
 
 	public function run(): void
 	{
+		if ($this->checkUpdate()) {
+			return;
+		}
+		return;
 		$this->checkDeletedDomains();
 		$this->runCycle();
 		return;
@@ -728,5 +732,44 @@ abstract class CronAbstract
 			->run();
 		$fileSync->clearRules()->setDefaultRules();
 		return true;
+	}
+
+	protected function checkUpdate(): bool
+	{
+		$check = false;
+		$currentVersion = false;
+		$lockFile = $_SERVER['DOCUMENT_ROOT'] . '/.local/.check.update';
+		if (file_exists($lockFile)) {
+			if ((filectime($lockFile) + 3600 * 24) < time()) {
+				$check = true;
+			}
+		} else {
+			$check = true;
+		}
+		$update = false;
+		if ($check) {
+			$currentVersion = trim(file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/version'));
+			$remoteVersion = null;
+			$curl = curl_init('https://raw.githubusercontent.com/AmminaSolutions/ispmanager.ammina.plugins/refs/heads/main/version');
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			$result = curl_exec($curl);
+			$code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+			if ((int)$code === 200 && strlen($result) > 0) {
+				$remoteVersion = trim($result);
+			}
+			curl_close($curl);
+			if (!is_null($remoteVersion)) {
+				@unlink($lockFile);
+				file_put_contents($lockFile, time());
+				if (version_compare($currentVersion, $remoteVersion, '<')) {
+					$update = true;
+				}
+			}
+		}
+		if ($update) {
+			@exec('sh ' . $_SERVER['DOCUMENT_ROOT'] . '/update.sh > /dev/null 2>&1');
+			return true;
+		}
+		return false;
 	}
 }
