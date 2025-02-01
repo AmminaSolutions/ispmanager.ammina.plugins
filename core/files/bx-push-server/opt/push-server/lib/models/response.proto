@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+import "sender.proto";
+
+option php_namespace = "Bitrix\\Pull\\Protobuf";
+
+message ResponseBatch
+{
+    repeated Response responses = 1;
+}
+
+message Response
+{
+    oneof command
+    {
+        OutgoingMessagesResponse outgoingMessages = 1;
+        ChannelStatsResponse channelStats = 2;
+        JsonResponse serverStats = 3;
+        string json = 4;
+    }
+}
+
+message OutgoingMessagesResponse
+{
+    repeated OutgoingMessage messages = 1;
+}
+
+message OutgoingMessage
+{
+    bytes id = 1;
+    string body = 2;
+    uint32 expiry = 3;
+    fixed32 created = 4;
+    Sender sender = 5;
+}
+
+message ChannelStatsResponse
+{
+    repeated ChannelStats channels = 1;
+}
+
+message ChannelStats
+{
+    bytes id = 1;
+    bool isPrivate = 2;
+    bool isOnline = 3;
+}
+
+message JsonResponse
+{
+    string json = 1;
+}

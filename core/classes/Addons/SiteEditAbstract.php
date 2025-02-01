@@ -410,6 +410,9 @@ abstract class SiteEditAbstract extends AddonAbstract
 			if ($this->getFlagFromParam('site_bitrix_settings_multisite') === 'on' && strlen($this->getFromParam('site_bitrix_settings_multisite_main')) > 0) {
 				$this->makeBitrixMultisite($this->getFromParam('site_bitrix_settings_multisite_main'));
 			}
+			if ($this->getFlagFromParam('site_bitrix_settings_b24') === 'on' && $this->getFlagFromParam('site_bitrix_settings_pushserver') === 'on') {
+				$this->makeBitrix24PushServer();
+			}
 			$this->makeBitrixCommands();
 		}
 	}
@@ -487,6 +490,14 @@ abstract class SiteEditAbstract extends AddonAbstract
 	protected function makeBitrixCommands(): void
 	{
 		addJob("ammina.bitrix.commands", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeBitrix24PushServer(): void
+	{
+		addJob("ammina.bitrix.pushserver", [
 			'site' => $this->getFromParam('site_name'),
 			'owner' => $this->siteOwner,
 		]);

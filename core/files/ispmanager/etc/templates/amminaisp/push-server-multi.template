@@ -1,0 +1,25 @@
+# template for file /etc/sysyconfig/push-server-multi
+HG_DIR=/opt/push-server
+CFG_DIR=/etc/push-server
+VAR_DIR=/var/log/push-server
+BASE_SUB=[% AMMINA_BASE_PORT_SUB %]            # base for port number where sub services lives
+BASE_PUB=[% AMMINA_BASE_PORT_PUB %]            # base for port number where pub services lives
+TMPL_SUB=push-server-sub-__PORT__.json
+TMPL_PUB=push-server-pub-__PORT__.json
+USER=www-data
+ID_SUB=[% AMMINA_CNT_SUB %]              # max ID for sub service
+ID_PUB=[% AMMINA_CNT_PUB %]              # max ID for pub service
+IP_LIST=[% AMMINA_IP_LIST %]
+PID_SUB=push-server-sub-__PORT__.pid
+PID_PUB=push-server-pub-__PORT__.pid
+WS_PORT=[% AMMINA_WS_PORT %]
+PUBPATH=/bitrix/pub/
+SUBPATH=/bitrix/sub/
+SUBWSPATH=/bitrix/subws/
+RESTPATH=/bitrix/rest/
+RUN_DIR=/tmp/push-server
+REDIS_SOCK=[% AMMINA_REDIS_SOCK %]
+REDIS_HOST=[% AMMINA_REDIS_HOST %]
+REDIS_PORT=[% AMMINA_REDIS_PORT %]
+WS_HOST=[% AMMINA_IP_ADDR_EXTERNAL %]
+SECURITY_KEY=[% AMMINA_SECURITY_KEY %]

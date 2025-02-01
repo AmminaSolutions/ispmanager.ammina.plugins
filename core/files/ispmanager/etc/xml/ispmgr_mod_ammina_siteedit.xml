@@ -15,7 +15,7 @@
                         <if value="off" hide="laravel_settings"/>
                     </input>
                 </field>
-                <field name="site_platform" base="yes">
+                <field name="site_platform" base="yes" setvalues="yes">
                     <select name="site_platform" type="radio">
                         <if value="default" hide="site_redirect_www"/>
                         <if value="default" hide="site_redirect_http"/>

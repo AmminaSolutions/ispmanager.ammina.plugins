@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+import "sender.proto";
+import "receiver.proto";
+
+option php_namespace = "Bitrix\\Pull\\Protobuf";
+
+message RequestBatch
+{
+    repeated Request requests = 1;
+}
+
+message Request
+{
+    oneof command
+    {
+        IncomingMessagesRequest incomingMessages = 1;
+        ChannelStatsRequest channelStats = 2;
+        ServerStatsRequest serverStats = 3;
+        RegisterRequest registration = 4;
+    }
+}
+
+message IncomingMessagesRequest
+{
+    repeated IncomingMessage messages = 1;
+}
+
+message IncomingMessage
+{
+    repeated Receiver receivers = 1;
+    Sender sender = 2;
+    string body = 3;
+    uint32 expiry = 4;
+    string type = 5;
+}
+
+message ChannelStatsRequest
+{
+    repeated ChannelId channels = 1;
+}
+
+message ChannelId
+{
+    bytes id = 1;
+    bool isPrivate = 2;
+    bytes signature = 3;
+}
+
+message ServerStatsRequest
+{
+
+}
+
+message RegisterRequest
+{
+    string verificationQuery = 1;
+    string host = 2;
+}

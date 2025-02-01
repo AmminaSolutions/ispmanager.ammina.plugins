@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mgrdata>
+    <mainmenu level="admin+">
+        <modernmenu>
+            <node name="ammina">
+                <node name="ammina_bxpushserver"/>
+            </node>
+        </modernmenu>
+    </mainmenu>
+    <handler name="ammina_bxpushserver.sh" type="xml">
+        <func name="ammina_bxpushserver"/>
+    </handler>
+    <metadata name="ammina_bxpushserver" type="form">
+        <form>
+            <field name="ammina_active">
+                <input type="checkbox" name="ammina_active"/>
+            </field>
+            <field name="ammina_base_port_sub">
+                <input type="text" name="ammina_base_port_sub" check="int" checkargs="1,6553"/>
+            </field>
+            <field name="ammina_base_port_pub">
+                <input type="text" name="ammina_base_port_pub" check="int" checkargs="1,6553"/>
+            </field>
+            <field name="ammina_cnt_sub">
+                <input type="text" name="ammina_cnt_sub" check="int" checkargs="1,9"/>
+            </field>
+            <field name="ammina_cnt_pub">
+                <input type="text" name="ammina_cnt_pub" check="int" checkargs="1,9"/>
+            </field>
+            <field name="ammina_ws_port">
+                <input type="text" name="ammina_ws_port" check="int" checkargs="1,65535"/>
+            </field>
+            <field name="ammina_ip_list">
+                <input type="text" name="ammina_ip_list"/>
+            </field>
+            <field name="ammina_ip_addr_external">
+                <select name="ammina_ip_addr_external"/>
+            </field>
+            <field name="ammina_security_key">
+                <input type="text" name="ammina_security_key" readonly="yes"/>
+            </field>
+            <field name="ammina_cert">
+                <select name="ammina_cert"/>
+            </field>
+        </form>
+    </metadata>
+    <lang name="ru">
+        <messages name="desktop">
+            <msg name="modernmenu_ammina_bxpushserver">Настройки Push сервера для 1C-Битрикс</msg>
+            <msg name="modernmenu_ammina">AmminaISP</msg>
+        </messages>
+        <messages name="ammina_bxpushserver">
+            <msg name="title">Настройка Push сервера</msg>
+            <msg name="ammina_active">Активность</msg>
+            <msg name="hint_ammina_active">Push сервер активен</msg>
+            <msg name="ammina_base_port_sub">Базовый порт для получения сообщений</msg>
+            <msg name="hint_ammina_base_port_sub">Базовый порт (кроме последнего знака), на котором будут доступны
+                процессы NodeJS, обрабатывающие запросы на получение сообщений. Фактический порт будет иметь вид XXXA,
+                где XXX - значение в данном поле, а A - автосгенерированный порядковый номер от 0 до 9
+            </msg>
+            <msg name="ammina_base_port_pub">Базовый порт для публикации сообщений</msg>
+            <msg name="hint_ammina_base_port_pub">Базовый порт (кроме последнего знака), на котором будут доступны
+                процессы NodeJS, обрабатывающие запросы на публикацию сообщений. Фактический порт будет иметь вид XXXA,
+                где XXX - значение в данном поле, а A - автосгенерированный порядковый номер от 0 до 9
+            </msg>
+            <msg name="ammina_cnt_sub">Количество процессов получения сообщений</msg>
+            <msg name="hint_ammina_cnt_sub">Количество процессов NodeJS, обрабатывающих получение сообщений</msg>
+            <msg name="ammina_cnt_pub">Количество процессов публикации сообщений</msg>
+            <msg name="hint_ammina_cnt_pub">Количество процессов NodeJS, обрабатывающих публикацию сообщений</msg>
+            <msg name="ammina_ws_port">Порт WebSocket</msg>
+            <msg name="hint_ammina_ws_port">Порт WebSocket</msg>
+            <msg name="ammina_ip_list">Список локальных IP адресов</msg>
+            <msg name="hint_ammina_ip_list">Список локальных IP адресов</msg>
+            <msg name="ammina_ip_addr_external">Внешний IP адрес</msg>
+            <msg name="hint_ammina_ip_addr_external">Внешний IP адрес</msg>
+            <msg name="ammina_security_key">Ключ подписи данных</msg>
+            <msg name="hint_ammina_security_key">Ключ подписи данных. Автоматическая генерация</msg>
+            <msg name="ammina_cert">SSL сертификат для хоста NodeJS Push сервера</msg>
+            <msg name="hint_ammina_cert">SSL сертификат для хоста NodeJS Push сервера</msg>
+        </messages>
+    </lang>
+</mgrdata>

@@ -1308,4 +1308,80 @@ class ISPManager
 			$this->command('monitoring.add', ["elid" => $name, "service_name" => $name, "service_process_name" => $name, "service_type" => "unknown", "custom" => "off", "service_select_ip" => "127.0.0.1", "service_select_port" => "11211", "clicked_button" => "ok", "sok" => "ok"]);
 		}
 	}
+
+	public function getListCertificates(): array
+	{
+		$result = [];
+		$data = $this->command("sslcert", []);
+		if (!is_array($data['doc']['elem'])) {
+			return [];
+		}
+		foreach ($data['doc']['elem'] as $k => $v) {
+			if ($v['active']['$'] != "on") {
+				continue;
+			}
+			$result[$v['key']['$']] = [
+				'name' => $v['name']['$'],
+				'owner' => $v['owner']['$'],
+			];
+		}
+		return $result;
+	}
+
+	public function getListIpAddr(): array
+	{
+		$result = [];
+		$data = $this->command("ipaddrlist", []);
+		if (!is_array($data['doc']['elem'])) {
+			return [];
+		}
+		foreach ($data['doc']['elem'] as $k => $v) {
+			$result[] = $v['name']['$'];
+		}
+		return $result;
+	}
+
+	public function getSrvParams(): array
+	{
+		$result = [];
+		$data = $this->command("srvparam", []);
+		$result['srvname'] = $data['doc']['srvname']['$'];
+		return $result;
+	}
+
+	public function getBitrixPushServerParams(): array
+	{
+		$data = $this->command("ammina_bxpushserver");
+		$result = [
+			'active' => $data['doc']['ammina_active']['$'] === 'on',
+			'base_port_pub' => $data['doc']['ammina_base_port_pub']['$'],
+			'base_port_sub' => $data['doc']['ammina_base_port_sub']['$'],
+			'cert' => $data['doc']['ammina_cert']['$'],
+			'cnt_pub' => $data['doc']['ammina_cnt_pub']['$'],
+			'cnt_sub' => $data['doc']['ammina_cnt_sub']['$'],
+			'ip_addr_external' => $data['doc']['ammina_ip_addr_external']['$'],
+			'ip_list' => $data['doc']['ammina_ip_list']['$'],
+			'security_key' => $data['doc']['ammina_security_key']['$'],
+			'ws_port' => $data['doc']['ammina_ws_port']['$'],
+		];
+		return $result;
+	}
+
+	public function updatePushServerParams(array $params): void
+	{
+		$data = [
+			'ammina_active' => $params['active'] ? 'on' : 'off',
+			'ammina_base_port_pub' => $params['base_port_pub'],
+			'ammina_base_port_sub' => $params['base_port_sub'],
+			'ammina_cert' => $params['cert'],
+			'ammina_cnt_pub' => $params['cnt_pub'],
+			'ammina_cnt_sub' => $params['cnt_sub'],
+			'ammina_ip_addr_external' => $params['ip_addr_external'],
+			'ammina_ip_list' => $params['ip_list'],
+			'ammina_security_key' => $params['security_key'],
+			'ammina_ws_port' => $params['ws_port'],
+			'sok' => 'ok',
+		];
+		$this->command("ammina_bxpushserver", $data);
+	}
 }

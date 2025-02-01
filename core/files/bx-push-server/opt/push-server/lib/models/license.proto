@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option php_namespace = "Bitrix\\Pull\\Protobuf";
+
+message License
+{
+    uint32 id = 1;
+    string clientId = 2;
+    string host = 9;
+    string securityKey = 3;
+    string securityAlgo = 4;
+    fixed32 dateTo = 5;
+    string siteUrl = 6;
+    string verificationQuery = 7;
+    fixed32 lastCheck = 8;
+}

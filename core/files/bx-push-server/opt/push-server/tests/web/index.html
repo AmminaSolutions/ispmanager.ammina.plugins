@@ -1,0 +1,254 @@
+<!doctype html>
+<html>
+<head>
+	<link href="./styles.css" type="text/css" rel="stylesheet">
+
+	<script src="http://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.3/dist/minimal/protobuf.min.js"></script>
+	<script src="./models.js"></script>
+
+	<script>
+
+		function hexStringToByte(str)
+		{
+			if (!str)
+			{
+				return new Uint8Array();
+			}
+
+			var a = [];
+			for (var i = 0, len = str.length; i < len; i += 2)
+			{
+				a.push(parseInt(str.substr(i, 2), 16));
+			}
+
+			return new Uint8Array(a);
+		}
+
+		(function() {
+
+			"use strict";
+
+			const RequestBatch = protobuf.roots["push-server"].RequestBatch;
+			const ResponseBatch = protobuf.roots["push-server"].ResponseBatch;
+
+			let websocket = new WebSocket(
+				"ws://localhost:1337/sub/?binaryMode=true&CHANNEL_ID=" +
+				"8680edaa12e9f584f47a914dab468f73:a6739704597e02c9c953710326d72123.561cbc85d4dd7d4aaf8d5980c3be8572461cc91d" +
+				"/" +
+				"04ca28d7b1b849d3d7b13321b052c95d.9f93c054cd63ce1960f8cbe18f6b887db6ba2688"
+			);
+
+			websocket.binaryType = "arraybuffer";
+
+			let polling =
+				"http://localhost:1337/sub/?binaryMode=true&CHANNEL_ID=" +
+				"8680edaa12e9f584f47a914dab468f73:a6739704597e02c9c953710326d72123.561cbc85d4dd7d4aaf8d5980c3be8572461cc91d" +
+				"/" +
+				"2177d07409b785911604aa1247355277.954189244df6b2518b2ba03145ed07c9583d31e7"
+			;
+
+			let rest =
+				"http://localhost:1337/rest/?binaryMode=true&CHANNEL_ID=" +
+				"8680edaa12e9f584f47a914dab468f73:a6739704597e02c9c953710326d72123.561cbc85d4dd7d4aaf8d5980c3be8572461cc91d" +
+				"/" +
+				"2177d07409b785911604aa1247355277.954189244df6b2518b2ba03145ed07c9583d31e7"
+			;
+
+			let pub = "http://localhost:1337/pub/?binaryMode=true";
+
+			websocket.addEventListener("message", function(event) {
+
+				const buffer = event.data;
+
+				//const reader = protobuf.Reader.create(buffer);
+				const message = ResponseBatch.decode(new Uint8Array(buffer));
+				let output = document.getElementById("output");
+
+				console.log(message);
+
+				output.innerHTML += message + "\n";
+			});
+
+			websocket.addEventListener("error", (event) => {
+				console.log("ws error", event);
+			});
+
+			websocket.addEventListener("close", (event) => {
+				console.log("ws close", event);
+			});
+
+			document.addEventListener("DOMContentLoaded", function() {
+				let pollingButton = document.getElementById("polling");
+
+				const incomingMessage = RequestBatch.create({
+					requests: [{
+						incomingMessages: {
+							messages: [
+								{
+									receivers: [
+										{
+											id: hexStringToByte("a6739704597e02c9c953710326d72123"),
+											signature: hexStringToByte("8b210dc671d267c9cdb6ff89e4f33a51e2756d26")
+
+										}
+									],
+									body: "message 1",
+									expiry: 60 * 5
+								},
+								{
+									receivers: [
+										{
+											id: hexStringToByte("2177d07409b785911604aa1247355255"),
+											signature: hexStringToByte("3f1ac33b8b2e5da1728cbd2cc5eee5700e7a663a")
+										}
+									],
+									body: "message 2",
+									expiry: 60 * 5
+								}
+							]
+						}
+					}]
+				});
+
+				const channelStats = RequestBatch.create({
+					requests: [{
+						channelStats: {
+							channels: [
+								{
+									id: hexStringToByte("a6739704597e02c9c953710326d72123"),
+									signature: hexStringToByte("aa31d446bd841e1bcb6cec2fc880e38c04aa5d19")
+
+								},
+								{
+									id: hexStringToByte("2177d07409b785911604aa1247355255"),
+									signature: hexStringToByte("d044fb3772c70427f5b2647f2497c755eef613e4")
+								}
+							]
+						}
+					}]
+				});
+
+				const serverStats = RequestBatch.create({
+					requests: [{
+						serverStats: {}
+					}]
+				});
+
+				document.getElementById("push-messages").addEventListener("click", function() {
+					const buffer = RequestBatch.encode(incomingMessage).finish();
+					websocket.send(buffer);
+				});
+
+				document.getElementById("push-messages2").addEventListener("click", function() {
+					const buffer = RequestBatch.encode(incomingMessage).finish();
+
+					let xhr = new XMLHttpRequest();
+					xhr.onreadystatechange = function() {
+						if (xhr.readyState === 4) {
+							console.log("Push Messages 2", xhr.status, xhr.statusText);
+						}
+					};
+
+					xhr.open("POST", rest, true);
+					xhr.send(buffer);
+				});
+
+				document.getElementById("get-online").addEventListener("click", function() {
+
+					const buffer = RequestBatch.encode(channelStats).finish();
+					websocket.send(buffer);
+				});
+
+				document.getElementById("get-online2").addEventListener("click", function() {
+
+					const buffer = RequestBatch.encode(channelStats).finish();
+
+					let xhr = new XMLHttpRequest();
+					xhr.responseType = "arraybuffer";
+					xhr.onreadystatechange = function() {
+						if (xhr.readyState === 4) {
+							const message = ResponseBatch.decode(new Uint8Array(xhr.response));
+							console.log("Get Online 2", message);
+						}
+					};
+
+					xhr.open("POST", rest, true);
+					xhr.send(buffer);
+				});
+
+				document.getElementById("get-stats").addEventListener("click", function() {
+
+					const buffer = RequestBatch.encode(serverStats).finish();
+					websocket.send(buffer);
+				});
+
+				document.getElementById("get-stats2").addEventListener("click", function() {
+
+					const buffer = RequestBatch.encode(serverStats).finish();
+
+					let xhr = new XMLHttpRequest();
+					xhr.responseType = "arraybuffer";
+					xhr.onreadystatechange = function() {
+						if (xhr.readyState === 4) {
+							const message = ResponseBatch.decode(new Uint8Array(xhr.response));
+							console.log("Get Stats 2", message);
+						}
+					};
+
+					xhr.open("POST", pub, true);
+					xhr.send(buffer);
+				});
+
+
+				pollingButton.addEventListener("click", function() {
+
+					let xhr = new XMLHttpRequest();
+					xhr.responseType = "arraybuffer";
+					xhr.onreadystatechange = function() {
+						if (xhr.readyState === 4) {
+							const message = ResponseBatch.decode(new Uint8Array(xhr.response));
+							console.log(message);
+						}
+					};
+
+					xhr.open("GET", polling, true);
+					xhr.send();
+
+					// fetch(polling)
+					// 	.then(function(response) {
+					//
+					// 		response.arrayBuffer().then(function(buffer) {
+					// 			const message = ResponseBatch.decode(new Uint8Array(buffer));
+					// 			console.log(message);
+					// 		});
+					//
+					// 	})
+					// 	.catch(function(error) {
+					// 			console.log(error);
+					// 		}
+					// 	);
+
+				});
+			});
+		})();
+
+	</script>
+</head>
+<body>
+
+<button id="push-messages">Push Messages (WS)</button>
+<button id="push-messages2">Push Messages (REST)</button>
+<button id="get-online">Get Online (WS)</button>
+<button id="get-online2">Get Online (REST)</button>
+<button id="get-stats">Get Stats (WS)</button>
+<button id="get-stats2">Get Stats (PUB)</button>
+
+<button id="polling">Long Polling</button>
+
+
+<br><br>
+<label for="output">Server Response</label><textarea id="output"></textarea>
+
+
+</body>
+</html>

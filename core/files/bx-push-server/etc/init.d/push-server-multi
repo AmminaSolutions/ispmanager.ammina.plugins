@@ -1,0 +1,442 @@
+#!/bin/bash
+#
+# push-service process manager for NodeJS
+#
+# chkconfig: 345 80 20
+#
+# description: start and stop push process
+# processname: push-service
+#
+### BEGIN INIT INFO
+# Provides:          push-services
+# Required-Start: $local_fs $remote_fs
+# Required-Stop: $local_fs $remote_fs
+# Should-Start: $network
+# Should-Stop: $network
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description: push init script
+### END INIT INFO
+
+PROG=$(basename $0)
+CONF=/etc/sysconfig/push-server-multi
+
+# Source function library.
+#. /etc/rc.d/init.d/functions
+. /etc/init.d/push-server-functions
+
+[[ -f $CONF ]] && . $CONF
+
+OPT="${1}"
+TYPE="${2:-all}"
+PORT="${3:-all}"
+
+generate_security_key(){
+  randLength=128
+  rndStr=</dev/urandom tr -dc A-Za-z0-9 | head -c $randLength
+  echo $rndStr
+}
+
+to_log(){
+    msg="$1"
+    [[ -z $msg ]] && return 1
+
+    LOGGER_NAME=push-server
+    LOGGER_LEVEL=daemon.warning
+
+    logger -t $LOGGER_NAME -ip $LOGGER_LEVEL "$msg"
+    if [[ $DEBUG -gt 0 ]]; then
+        echo "$msg"
+    fi
+}
+
+
+defaults(){
+    [[ -z $HG_DIR ]]    &&  HG_DIR=/opt/data/push-server
+    [[ -z $CFG_DIR ]]   &&  CFG_DIR=/etc/push-server
+    [[ -z $VAR_DIR ]]   &&  VAR_DIR=/var/log/push-server
+    [[ -z $RUN_DIR ]]   &&  RUN_DIR=/tmp/push-server
+    [[ -z $BASE_SUB ]]  &&  BASE_SUB=801            # base for port number where sub services lives
+    [[ -z $BASE_PUB ]]  &&  BASE_PUB=901            # base for port number where pub services lives
+    [[ -z $TMPL_SUB ]]  &&  TMPL_SUB=push-server-sub-__PORT__.json
+    [[ -z $TMPL_PUB ]]  &&  TMPL_PUB=push-server-pub-__PORT__.json
+    [[ -z $USER ]]      &&  USER=www-data
+    [[ -z $GROUP ]]     &&  GROUP=www-data
+    [[ -z $ID_SUB ]]    &&  ID_SUB=2              # max ID for sub service
+    [[ -z $ID_PUB ]]    &&  ID_PUB=1              # max ID for pub service
+    [[ -z $IP_LIST ]]   &&  IP_LIST='"127.0.0.1"'
+    [[ -z $PID_SUB ]]   &&  PID_SUB=push-server-sub-__PORT__.pid
+    [[ -z $PID_PUB ]]   &&  PID_PUB=push-server-pub-__PORT__.pid
+    [[ -z $WS_HOST ]]   &&  WS_HOST=127.0.0.1
+    [[ -z $WS_PORT ]]   &&  WS_PORT=8895
+    [[ -z $REDIS_SOCK ]] && REDIS_SOCK=/var/run/redis/redis.sock
+    [[ -z $SUBPATH ]]   && SUBWSPATH="/bitrix/subws/"
+    [[ -z $SUBWSPATH ]]   && SUBPATH="/bitrix/sub/"
+    [[ -z $PUBPATH ]]   && PUBPATH="/bitrix/pub/"
+    [[ -z $RESTPATH ]]   && RESTPATH="/bitrix/rest/"
+    [[ -z $DEBUG ]] && DEBUG=1
+    [[ -z $MULTISERVICE ]] && MULTISERVICE=0
+    [[ -z $NOFILE_LIMITS ]] && NOFILE_LIMITS=infinity
+    [[ -z $STACK_LIMITS ]] && STACK_LIMITS=infinity
+
+    if [[ -z $SECURITY_KEY ]]; then
+        to_log "generate security key"
+        SECURITY_KEY=$(generate_security_key)
+        echo "SECURITY_KEY=$SECURITY_KEY" >> $CONF
+    fi
+
+    if [[ ! -d $VAR_DIR ]]; then
+        mkdir -p $VAR_DIR && chown ${USER}:root $VAR_DIR
+        to_log "create $VAR_DIR"
+    fi
+}
+
+create_config_from_template(){
+    template_name="${1}"
+    service_port="${2}"
+
+    if [[ -z $template_name || -z $service_port ]]; then
+        to_log "There are empty options template_name or service_port. Exit."
+        exit 1
+    fi
+
+    template_file="${CFG_DIR}/${template_name}"
+    service_type="$(echo $template_name | awk -F'-' '{print $3}')"
+
+    if [[ ! -f $template_file ]]; then
+        to_log "There is no file $template_file. Exit."
+        exit 1
+    fi
+
+    RESET_CHANGES=0
+
+
+    dest_file=$(echo "$template_file" | sed -e "s/__PORT__/$service_port/")
+    cat  $template_file | \
+        sed -e "s/__PORT__/$service_port/g;
+            s/__SECURITY_KEY__/$SECURITY_KEY/g;
+            s/__WS_HOST__/$WS_HOST/g;
+            s/__WS_PORT__/$WS_PORT/g;
+            s:__PUBPATH__:$PUBPATH:g;
+            s:__SUBPATH__:$SUBPATH:g;
+            s:__RESTPATH__:$RESTPATH:g;
+            s:__SUBWSPATH__:$SUBWSPATH:g;
+            s:__REDIS_SOCK__:$REDIS_SOCK:g;
+            s:__IP_LIST__:$(printf "%q" $IP_LIST):g;
+        "> $dest_file.tmp
+    md5_dest_file=0
+    md5_dest_tmp=$(md5sum $dest_file.tmp | awk '{print $1}')
+    if [[ -f $dest_file ]]; then
+        md5_dest_file=$(md5sum $dest_file | awk '{print $1}')
+    fi
+    if [[ $md5_dest_file != "$md5_dest_tmp" ]]; then
+        mv -f $dest_file.tmp $dest_file
+        chown ${USER}:root $dest_file
+        to_log "Update config file: $dest_file"
+        RESET_CHANGES=$(( $RESET_CHANGES + 1 ))
+    else
+        rm -f $dest_file.tmp
+    fi
+
+
+    [[ $MULTISERVICE -eq 0 ]] && return 0
+    template_service="${CFG_DIR}/push-server-__PORT__.service"
+    dest_service=$(echo "$template_service" | \
+        sed -e "s/__PORT__/$service_port/")
+    dest_service_bn=$(basename $dest_service)
+    dest_service_fn="/etc/systemd/system/${dest_service_bn}"
+
+    cat $template_service | \
+        sed -e "s/__PORT__/$service_port/g;
+            s:__TYPE__:$service_type:g;
+            s:__RUN_DIR__:$RUN_DIR:g;
+            s:__USER__:$USER:g;
+            s:__GROUP__:$GROUP:g;
+            s:__NOFILE__:$NOFILE_LIMITS:g;
+            s:__STACK__:$STACK_LIMITS:g;
+            " > ${dest_service_fn}.tmp
+    md5_dest_service=0
+    md5_dest_service_tmp=$(md5sum ${dest_service_fn}.tmp | \
+        awk '{print $1}')
+    if [[ -f $dest_service_fn ]]; then
+        md5_dest_service=$(md5sum ${dest_service_fn} | \
+            awk '{print $1}')
+    fi
+    if [[ $md5_dest_service_tmp != $md5_dest_service ]]; then
+        mv -f ${dest_service_fn}.tmp ${dest_service_fn}
+        to_log "Update service file: ${dest_service_fn}"
+        RESET_CHANGES=$(( $RESET_CHANGES + 1 ))
+
+    else
+        rm -f ${dest_service_fn}.tmp
+    fi
+
+
+
+
+}
+
+generate_configs(){
+    services="${1:-all}"
+    sport="${2}"
+
+    if [[ $services == "all" || $services == "sub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_SUB); do
+                service_port="${BASE_SUB}${id}"
+                create_config_from_template "$TMPL_SUB" "$service_port"
+            done
+        else
+            create_config_from_template "$TMPL_SUB" "$sport"
+        fi
+    fi
+
+    if [[ $services == "all" || $services == "pub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_PUB); do
+                service_port="${BASE_PUB}${id}"
+                create_config_from_template "$TMPL_PUB" "$service_port"
+            done
+        else
+            create_config_from_template "$TMPL_PUB" "$sport"
+        fi
+    fi
+}
+
+status_service(){
+    template_name="${1}"
+    port="${2}"
+    show="${3:-1}"
+
+
+
+    template_file="$CFG_DIR/$template_name"
+    service_type="$(echo $template_name | awk -F'-' '{print $3}')"
+    pidf="$RUN_DIR/${service_type}-${port}.pid"
+
+    if [[ $show -gt 0 ]]; then
+        status -p $pidf
+    else
+        status -p $pidf >/dev/null 2>&1
+    fi
+}
+
+status_services(){
+    services="${1:-all}"
+    sport="${2}"
+
+    if [[ $services == "all" || $services == "sub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_SUB); do
+                service_port="${BASE_SUB}${id}"
+                status_service "$TMPL_SUB" "$service_port" 0
+                if [[ $? -gt 0 ]]; then
+                    status="not running"
+                else
+                    pidn=$(cat $pidf)
+                    status="running PID=$pidn"
+                fi
+                to_log "${service_type}-${service_port}: $status"
+            done
+        else
+            status_service "$TMPL_SUB" "$sport" 0
+            if [[ $? -gt 0 ]]; then
+                status="not running"
+            else
+                pidn=$(cat $pidf)
+                status="running PID=$pidn"
+            fi
+            to_log "${service_type}-${sport}: $status"
+        fi
+    fi
+
+    if [[ $services == "all" || $services == "pub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_PUB); do
+                service_port="${BASE_PUB}${id}"
+                status_service "$TMPL_PUB" "$service_port" 0
+                if [[ $? -gt 0 ]]; then
+                    status="not running"
+                else
+                    pidn=$(cat $pidf)
+                    status="running PID=$pidn"
+                fi
+                to_log "${service_type}-${service_port}: $status"
+            done
+        else
+            status_service "$TMPL_PUB" "$sport" 0
+            if [[ $? -gt 0 ]]; then
+                status="not running"
+            else
+                pidn=$(cat $pidf)
+                status="running PID=$pidn"
+            fi
+            to_log "${service_type}-${sport}: $status"
+        fi
+    fi
+}
+
+start_service(){
+    template_name="${1}"
+    port="${2}"
+    run_type="${3:-initd}"
+
+    template_file="$CFG_DIR/$template_name"
+    service_type="$(echo $template_name | awk -F'-' '{print $3}')"
+    pidf="$RUN_DIR/${service_type}-${port}.pid"
+    logf="$VAR_DIR/${service_type}-${port}.log"
+    cfgf="$(echo "$template_file" | sed -e "s/__PORT__/$port/")"
+    to_log "${service_type}-${port}: pidf=$pidf cfgf=$cfgf"
+
+    status_service "$template_name" "$port" 0
+    if [[ $? -eq 0 ]]; then
+        to_log "${service_type}-${port}: already running"
+        return 0
+    fi
+
+    node_options=
+    if [[ -n $MAX_MEMORY ]]; then
+        node_options="--max-old-space-size=$MAX_MEMORY"
+    fi
+
+    pushd $HG_DIR 1>/dev/null 2>&1
+    if [[ $run_type == "initd" ]]; then
+        sudo -u $USER -H /bin/bash \
+            -c "( node $node_options server.js --config $cfgf 1>$logf 2>&1 ) &"
+        fpid=$!
+    else
+        ( node $node_options server.js --config $cfgf 1>$logf 2>&1 ) &
+        fpid=$!
+    fi
+
+    pid=$(ps -ef | \
+        grep "server.js --config $cfgf" | \
+        grep -v grep | awk '{print $2}')
+
+    to_log "fpid=$fpid pid=$pid"
+
+    if [[ $pid -gt 0 ]] 2>/dev/null; then
+        to_log "${service_type}-${port}: start process PID=$pid"
+        echo $pid > $pidf
+    else
+        to_log "${service_type}-${port}: there is no process in the system"
+        return 1
+    fi
+    popd 1>/dev/null 2>&1
+    return 0
+}
+
+start_services(){
+    services="${1:-all}"
+    sport="${2}"
+    run_type="${3:-initd}"
+
+    if [[ $services == "all" || $services == "sub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_SUB); do
+                service_port="${BASE_SUB}${id}"
+                start_service "$TMPL_SUB" "$service_port" "$run_type"
+            done
+        else
+            start_service "$TMPL_SUB" "$sport" "$run_type"
+        fi
+    fi
+
+    if [[ $services == "all" || $services == "pub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_PUB); do
+                service_port="${BASE_PUB}${id}"
+                start_service "$TMPL_PUB" "$service_port" "$run_type"
+            done
+        else
+            start_service "$TMPL_PUB" "$sport" "$run_type"
+        fi
+    fi
+
+
+}
+
+stop_service(){
+    template_name="${1}"
+    port="${2}"
+
+    template_file="$CFG_DIR/$template_name"
+    service_type="$(echo $template_name | awk -F'-' '{print $3}')"
+    pidf="$RUN_DIR/${service_type}-${port}.pid"
+    logf="$VAR_DIR/${service_type}-${port}.log"
+    cfgf="$(echo "$template_file" | sed -e "s/__PORT__/$port/")"
+    to_log "${service_type}-${port}: pidf=$pidf cfgf=$cfgf"
+
+    status_service "$template_name" "$port" 0
+    if [[ $? -ne 0 ]]; then
+        to_log "${service_type}-${port}: not found process"
+        return 0
+    fi
+    pidn=$(cat $pidf)
+
+    killproc -p ${pidf} 1>/dev/null 2>&1
+    if [[ $? -gt 0 ]]; then
+        to_log "${service_type}-${port}: process stop returned error"
+        return 1
+    fi
+    to_log "${service_type}-${port}: PID=$pidn stopped"
+    return 0
+}
+
+stop_services(){
+    services="${1:-all}"
+    sport="${2}"
+
+    if [[ $services == "all" || $services == "sub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_SUB); do
+                service_port="${BASE_SUB}${id}"
+                stop_service "$TMPL_SUB" "$service_port"
+            done
+        else
+            stop_service "$TMPL_SUB" "$sport"
+        fi
+    fi
+
+    if [[ $services == "all" || $services == "pub" ]]; then
+        if [[ -z $sport || $sport == "all" ]]; then
+            for id in $(seq 0 $ID_PUB); do
+                service_port="${BASE_PUB}${id}"
+                stop_service "$TMPL_PUB" "$service_port" "$run_type"
+            done
+        else
+            stop_service "$TMPL_PUB" "$sport" "$run_type"
+        fi
+    fi
+}
+
+# set default values for variables
+defaults
+
+case ${OPT} in
+    "configs")          generate_configs    "$TYPE" "$PORT" ;;
+    "start")            start_services      "$TYPE" "$PORT" ;;
+    "systemd_start")    start_services      "$TYPE" "$PORT" "systemd" ;;
+    "status")           status_services     "$TYPE" "$PORT" ;;
+    "stop")             stop_services       "$TYPE" "$PORT" ;;
+    "restart")
+        stop_services       "$TYPE" "$PORT"
+        start_services      "$TYPE" "$PORT"
+        ;;
+    "reset")
+        generate_configs    "$TYPE" "$PORT"
+        if [[ $RESET_CHANGES -gt 0 ]]; then
+            stop_services       "$TYPE" "$PORT"
+            start_services      "$TYPE" "$PORT"
+        else
+            to_log "Nothing changes in config files. Exit"
+        fi
+        ;;
+    *)
+        echo "Usage: {start|stop|configs|status|restart|reset} [sub|pub] [port]"
+        exit 1
+        ;;
+esac
+
+
+

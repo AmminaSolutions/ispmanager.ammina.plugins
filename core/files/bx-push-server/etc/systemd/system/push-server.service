@@ -1,0 +1,17 @@
+[Unit]
+Description=RTC service
+After=redis.target
+
+[Service]
+User=www-data
+Group=www-data
+Type=forking
+ExecStart=/etc/init.d/push-server-multi systemd_start
+ExecStop=/etc/init.d/push-server-multi stop
+WorkingDirectory=/opt/push-server
+Restart=always
+RestartSec=30
+PrivateTmp=false
+
+[Install]
+WantedBy=multi-user.target

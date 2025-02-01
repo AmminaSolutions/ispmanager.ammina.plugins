@@ -1,0 +1,20 @@
+[Unit]
+Description=RTC service
+After=redis.target
+
+[Service]
+User=__USER__
+Group=__GROUP__
+Type=forking
+ExecStart=/etc/init.d/push-server-multi systemd_start __TYPE__ __PORT__
+ExecStop=/etc/init.d/push-server-multi stop __TYPE__ __PORT__
+WorkingDirectory=/opt/push-server
+Restart=always
+RestartSec=5
+PrivateTmp=false
+PIDFile=__RUN_DIR__/__TYPE__-__PORT__.pid
+LimitNOFILE=__NOFILE__
+LimitSTACK=__STACK__
+
+[Install]
+WantedBy=multi-user.target

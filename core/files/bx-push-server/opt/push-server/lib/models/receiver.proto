@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option php_namespace = "Bitrix\\Pull\\Protobuf";
+
+message Receiver
+{
+    bytes id = 1;
+    bool isPrivate = 2;
+    bytes signature = 3;
+}

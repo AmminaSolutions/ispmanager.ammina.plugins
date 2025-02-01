@@ -136,37 +136,43 @@ abstract class CronAbstract
 			$runStatus = false;
 			switch ($command['COMMAND']) {
 				case 'ammina.bitrix.skeleton':
-					$runStatus = $this->jonAmminaBitrixSkeleton($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixSkeleton($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.makedb':
-					$runStatus = $this->jonAmminaBitrixMakeDb($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixMakeDb($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.multisite':
-					$runStatus = $this->jonAmminaBitrixMultisite($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixMultisite($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.cron':
-					$runStatus = $this->jonAmminaBitrixCron($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixCron($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.cache.memcached':
-					$runStatus = $this->jonAmminaBitrixCacheMemcached($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixCacheMemcached($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.cache.redis':
-					$runStatus = $this->jonAmminaBitrixCacheRedis($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixCacheRedis($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.error.log':
-					$runStatus = $this->jonAmminaBitrixErrorLog($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixErrorLog($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.composer':
-					$runStatus = $this->jonAmminaBitrixComposer($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixComposer($command['OPTIONS']);
 					break;
 				case 'ammina.bitrix.commands':
-					$runStatus = $this->jonAmminaBitrixCommands($command['OPTIONS']);
+					$runStatus = $this->jobAmminaBitrixCommands($command['OPTIONS']);
+					break;
+				case 'ammina.bitrix.pushserver':
+					$runStatus = $this->jobAmminaBitrixPushServer($command['OPTIONS']);
+					break;
+				case 'ammina.bitrix.install.pushserver':
+					$runStatus = $this->jobAmminaInstallBitrixPushServer($command['OPTIONS']);
 					break;
 				case 'ammina.memcached.monitoring':
-					$runStatus = $this->jonAmminaMemcachedMonitoring($command['OPTIONS']);
+					$runStatus = $this->jobAmminaMemcachedMonitoring($command['OPTIONS']);
 					break;
 				case 'ammina.redis.monitoring':
-					$runStatus = $this->jonAmminaRedisMonitoring($command['OPTIONS']);
+					$runStatus = $this->jobAmminaRedisMonitoring($command['OPTIONS']);
 					break;
 
 			}
@@ -176,7 +182,7 @@ abstract class CronAbstract
 		}
 	}
 
-	protected function jonAmminaBitrixSkeleton(array $option): bool
+	protected function jobAmminaBitrixSkeleton(array $option): bool
 	{
 		$docRoot = ISPManager::getInstance()->getSiteDocroot($option['site']);
 		if (strlen($docRoot) > 0 && file_exists($docRoot)) {
@@ -230,7 +236,7 @@ abstract class CronAbstract
 		return Utils::randString($length, $extendsChars);
 	}
 
-	protected function jonAmminaBitrixMakeDb(array $option): bool
+	protected function jobAmminaBitrixMakeDb(array $option): bool
 	{
 		$docRoot = ISPManager::getInstance()->getSiteDocroot($option['site']);
 		if (strlen($docRoot) <= 0 || !file_exists($docRoot)) {
@@ -341,7 +347,7 @@ abstract class CronAbstract
 		return true;
 	}
 
-	protected function jonAmminaBitrixMultisite(array $option): bool
+	protected function jobAmminaBitrixMultisite(array $option): bool
 	{
 		if (strlen($option['site']) <= 0) {
 			return false;
@@ -375,7 +381,7 @@ abstract class CronAbstract
 		return true;
 	}
 
-	protected function jonAmminaBitrixCron(array $option): bool
+	protected function jobAmminaBitrixCron(array $option): bool
 	{
 		$docroot = ISPManager::getInstance()->getSiteDocroot($option['site']);
 		$scheduler = ISPManager::getInstance()->getUserScheduler($option['owner']);
@@ -450,7 +456,7 @@ abstract class CronAbstract
 		return true;
 	}
 
-	protected function jonAmminaBitrixCacheMemcached(array $option): bool
+	protected function jobAmminaBitrixCacheMemcached(array $option): bool
 	{
 		$docroot = ISPManager::getInstance()->getSiteDocroot($option['site']);
 		$strIdentSid = substr(md5($option['site']), 0, 4) . substr(crc32($option['site']), 0, 2) . "|";
@@ -481,7 +487,7 @@ abstract class CronAbstract
 		return true;
 	}
 
-	protected function jonAmminaBitrixCacheRedis(array $option): bool
+	protected function jobAmminaBitrixCacheRedis(array $option): bool
 	{
 		$docroot = ISPManager::getInstance()->getSiteDocroot($option['site']);
 		$strIdentSid = substr(md5($option['site']), 0, 4) . substr(crc32($option['site']), 0, 2) . "|";
@@ -516,7 +522,7 @@ abstract class CronAbstract
 		return true;
 	}
 
-	protected function jonAmminaBitrixErrorLog(array $option): bool
+	protected function jobAmminaBitrixErrorLog(array $option): bool
 	{
 		$docroot = ISPManager::getInstance()->getSiteDocroot($option['site']);
 		$settings = [];
@@ -547,7 +553,7 @@ abstract class CronAbstract
 		return true;
 	}
 
-	protected function jonAmminaBitrixComposer(array $option): bool
+	protected function jobAmminaBitrixComposer(array $option): bool
 	{
 		$this->checkPhpRunCommand($option['site'], $option['owner']);
 		$homeDir = Utils::getUserHomeDir($option['owner']);
@@ -573,13 +579,13 @@ abstract class CronAbstract
 		return false;
 	}
 
-	protected function jonAmminaMemcachedMonitoring(array $option): bool
+	protected function jobAmminaMemcachedMonitoring(array $option): bool
 	{
 		ISPManager::getInstance()->makeMemcachedMonitoring($this->memcachedServiceName, $this->memcachedServicePid);
 		return true;
 	}
 
-	protected function jonAmminaRedisMonitoring(array $option): bool
+	protected function jobAmminaRedisMonitoring(array $option): bool
 	{
 		ISPManager::getInstance()->makeRedisMonitoring($this->redisServiceName, $this->redisServicePid);
 		return true;
@@ -605,7 +611,7 @@ abstract class CronAbstract
 		exec("chmod 0744 {$filePath}");
 	}
 
-	protected function jonAmminaBitrixCommands(array $option): bool
+	protected function jobAmminaBitrixCommands(array $option): bool
 	{
 		$homeDir = Utils::getUserHomeDir($option['owner']);
 		$this->checkPhpRunCommand($option['site'], $option['owner']);
@@ -666,5 +672,61 @@ abstract class CronAbstract
 		return true;
 	}
 
+	protected function jobAmminaBitrixPushServer(array $option): bool
+	{
+		$pushServer = ISPManager::getInstance()->getBitrixPushServerParams();
+		$updatePush = !$pushServer['active'];
+		if (strlen($pushServer['security_key']) <= 0) {
+			$pushServer['security_key'] = Utils::randString(128);
+			$updatePush = true;
+		}
+		if ($updatePush) {
+			ISPManager::getInstance()->updatePushServerParams($pushServer);
+		}
+		$servParams = ISPManager::getInstance()->getSrvParams();
+		$docroot = ISPManager::getInstance()->getSiteDocroot($option['site']);
+		$settings = [];
+		if (file_exists("{$docroot}/bitrix/.settings_extra.php")) {
+			$settings = include("{$docroot}/bitrix/.settings_extra.php");
+		}
+		$settings['pull'] = [
+			'value' => [
+				'path_to_listener' => 'http://#DOMAIN#/bitrix/sub/',
+				'path_to_listener_secure' => 'https://#DOMAIN#/bitrix/sub/',
+				'path_to_modern_listener' => 'http://#DOMAIN#/bitrix/sub/',
+				'path_to_modern_listener_secure' => 'https://#DOMAIN#/bitrix/sub/',
+				'path_to_mobile_listener' => 'http://#DOMAIN#:8893/bitrix/sub/',
+				'path_to_mobile_listener_secure' => 'https://#DOMAIN#:8894/bitrix/sub/',
+				'path_to_websocket' => 'ws://#DOMAIN#/bitrix/subws/',
+				'path_to_websocket_secure' => 'wss://#DOMAIN#/bitrix/subws/',
+				'path_to_publish' => 'http://' . $servParams['srvname'] . ':8895/bitrix/pub/',
+				'path_to_publish_web' => 'http://#DOMAIN#/bitrix/rest/',
+				'path_to_publish_web_secure' => 'https://#DOMAIN#/bitrix/rest/',
+				'nginx_version' => '4',
+				'nginx_command_per_hit' => '100',
+				'nginx' => 'Y',
+				'nginx_headers' => 'N',
+				'push' => 'Y',
+				'websocket' => 'Y',
+				'signature_key' => $pushServer['security_key'],
+				'signature_algo' => 'sha1',
+				'guest' => 'N',
+			],
+		];
+		file_put_contents("{$docroot}/bitrix/.settings_extra.php", '<' . '? return ' . var_export($settings, true) . ';');
+		chown("{$docroot}/bitrix/.settings_extra.php", $option['owner']);
+		return true;
+	}
 
+	protected function jobAmminaInstallBitrixPushServer(array $option): bool
+	{
+		$fileSync = FilesSynchronizer::getInstance();
+		$fileSync
+			->clearRules()
+			->addRule('bx-push-server/opt', '/opt')
+			->addRule('bx-push-server/etc', '/etc')
+			->run();
+		$fileSync->clearRules()->setDefaultRules();
+		return true;
+	}
 }

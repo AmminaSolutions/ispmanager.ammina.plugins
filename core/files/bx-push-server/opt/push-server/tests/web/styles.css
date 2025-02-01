@@ -1,0 +1,17 @@
+label {
+	display: block;
+}
+
+button {
+	font-size: 14px;
+}
+
+#input {
+	width: 500px;
+	height: 50px;
+}
+
+#output {
+	width: 1200px;
+	height: 400px;
+}

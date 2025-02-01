@@ -1,0 +1,57 @@
+{
+    "name": "push-server",
+    "private": true,
+    "version": "0.4.0",
+    "scripts": {
+	"start": "node server.js",
+	"proto": "./node_modules/protobufjs/bin/pbjs --no-verify --no-convert --no-delimited --force-message -t static-module -r push-server -w commonjs -o ./lib/models/index.js ./lib/models/request.proto ./lib/models/response.proto ./lib/models/notification.proto",
+	"proto-client": "./node_modules/protobufjs/bin/pbjs --no-verify --no-convert --no-delimited --force-message -t static-module -r push-server -w closure -o ./tests/web/models.js ./lib/models/request.proto ./lib/models/response.proto",
+	"proto-php": "node ./misc/generate-protobuf-php.js",
+	"test": "./node_modules/mocha/bin/mocha.js --exit ./tests/api/index.js",
+	"test-json": "./node_modules/mocha/bin/mocha.js --reporter mocha-json-output-reporter --exit ./tests/api/index.js",
+	"nagios": "/usr/local/bin/node node_modules/mocha/bin/mocha --exit --ui bdd --reporter tests/api/nagios-reporter.js tests/api/index.js"
+    },
+    "dependencies": {
+	"minimist": "^1.1.0",
+	"mysql": "^2.18.1",
+	"protobufjs": "^6.10.2",
+	"redis": "^3.0.2",
+	"superagent": "^5.0.5",
+	"winston": "^3.7.2",
+	"winston-daily-rotate-file": "^4.6.1",
+	"ws": "^8.4.1"
+    },
+    "devDependencies": {
+	"mocha": "^10.2.0",
+	"mocha-json-output-reporter": "^2.1.0",
+	"request": "^2.51.0"
+    },
+    "optionalDependencies": {
+	"bufferutil": "^4.0.0",
+	"utf-8-validate": "^5.0.0"
+    },
+    "bundledDependencies": [
+	"minimist",
+	"mysql",
+	"protobufjs",
+	"redis",
+	"superagent",
+	"winston",
+	"winston-daily-rotate-file",
+	"ws",
+	"bufferutil",
+	"utf-8-validate"
+    ],
+    "bundleDependencies": [
+	"minimist",
+	"mysql",
+	"protobufjs",
+	"redis",
+	"superagent",
+	"winston",
+	"winston-daily-rotate-file",
+	"ws",
+	"bufferutil",
+	"utf-8-validate"
+    ]
+}

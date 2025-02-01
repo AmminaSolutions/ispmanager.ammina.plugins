@@ -1,0 +1,21 @@
+{
+	"servers": [
+		{
+			"name": "Publishing Server",
+			"port": 1340,
+			"backlog": 5000,
+			"routes": {
+				"pub": "/pub/",
+				"rest": "/rest/"
+			}
+		}
+	],
+	"publishMode": true,
+	"storage": {
+		"type": "redis",
+		"messageTTL": 86400,
+		"channelTTL": 86400,
+		"onlineTTL": 120,
+		"onlineDelta": 10
+	}
+}
