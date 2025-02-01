@@ -15,8 +15,8 @@
                         <if value="off" hide="laravel_settings"/>
                     </input>
                 </field>
-                <field name="site_platform" base="yes" setvalues="yes">
-                    <select name="site_platform" type="radio">
+                <field name="site_platform" base="yes">
+                    <select name="site_platform" type="radio" setvalues="yes">
                         <if value="default" hide="site_redirect_www"/>
                         <if value="default" hide="site_redirect_http"/>
                         <if value="default" hide="bitrix_settings"/>
@@ -62,6 +62,9 @@
             <page name="laravel_settings">
                 <field name="laravel_settings_note" noname="yes" fullwith="yes">
                     <textdata type="msg" name="laravel_settings_note"/>
+                </field>
+                <field name="site_laravel_settings_composer">
+                    <input type="checkbox" name="site_laravel_settings_composer"/>
                 </field>
             </page>
             <page name="bitrix_settings">
@@ -206,7 +209,8 @@
 
             <msg name="laravel_settings">Настройка сайта Laravel</msg>
             <msg name="laravel_settings_note">Настройка WWW-домена для работы с Laravel.</msg>
-
+            <msg name="site_laravel_settings_composer">PHP Composer для Laravel</msg>
+            <msg name="hint_site_laravel_settings_composer">Установить для сайта PHP Composer</msg>
 
             <msg name="bitrix_settings">Настройка сайта 1C-Bitrix</msg>
             <msg name="bitrix_settings_note">Настройка WWW-домена для работы с 1С-Битрикс: Управление сайтом или 1С-Битрикс: Корпоративный портал (в т.ч. CRM+Интернет-магазин).<br/>Обязательно включите в разделе "Оптимизация и защита от DDoS" настроек (выше) "Настроить сжатие", "Уровень сжатия" со значением от 5 до 7, "Настроить кеширование", "Период кеширования" со значением "неограничено".

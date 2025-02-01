@@ -131,6 +131,11 @@ abstract class SiteEditAbstract extends AddonAbstract
 			'ini' => 'seo_settings_nomultislash',
 			'default' => false,
 		],
+		'site_laravel_settings_composer' => [
+			'type' => 'bool',
+			'ini' => 'laravel_settings_composer',
+			'default' => true,
+		],
 	];
 
 	public function __construct()
@@ -141,16 +146,36 @@ abstract class SiteEditAbstract extends AddonAbstract
 			$this->siteOwner = ISPManager::getInstance()->getWebdomainOwner($domainName);
 			$this->siteIdnName = Utils::idn_to_ascii($domainName);
 			$this->settingsFile = "site.{$this->siteIdnName}.ini";
-			$this->makeListMultisite();
 			$this->nginxConfigName = '/etc/nginx/vhosts/' . $this->siteOwner . "/" . $domainName . ".conf";
+		} else {
+			$this->siteOwner = $this->getFromParam('site_owner');
 		}
+		$this->makeListMultisite();
 	}
 
 	public function openForm(): void
 	{
+		if (strlen($this->getFromParam('sv_field')) > 0) {
+			$this->fillIniFromParams();
+		}
 		$this->dataAppend['use_php'] = boolToFlag($this->getFromParam('site_handler') == 'handler_php');
 		$this->fillDataAppendFromIni();
 		$this->fillDataAppendFromParams();
+		if ($this->getFromParam('sv_field') === 'site_platform') {
+			$domain = $this->getFromParam('site_name');
+			if ($this->getFromParam('site_platform') === 'laravel') {
+				$this->dataAppend['site_home'] = "www/{$domain}/public";
+				$this->dataAppend['site_laravel_settings_composer'] = "on";
+			} else {
+				$this->dataAppend['site_home'] = "www/{$domain}";
+			}
+			if ($this->getFromParam('site_platform') !== 'default') {
+				$this->dataAppend['site_gzip_level'] = 7;
+				$this->dataAppend['site_expire_times'] = 'expire_times_max';
+				$this->dataAppend['site_hsts'] = 'on';
+				$this->dataAppend['site_ssi'] = 'off';
+			}
+		}
 		if ($this->getFromParam('site_platform') !== 'default') {
 			$this->xml = str_replace('<site_phpcomposer>on</site_phpcomposer>', '<site_phpcomposer>off</site_phpcomposer>', $this->xml);
 		}
@@ -193,7 +218,15 @@ abstract class SiteEditAbstract extends AddonAbstract
 	protected function makeListMultisite(): void
 	{
 		$list = ['<val key=""></val>'];
-		$data = ISPManager::getInstance()->getWebdomainForBxMultisite($_SERVER['PARAM_site_name']);
+		$siteName = $this->getFromParam('site_name');
+		$siteOwner = $this->getFromParam('site_owner');
+		if (strlen($siteName) <= 0) {
+			$siteName = null;
+		}
+		if (strlen($siteOwner) <= 0) {
+			$siteOwner = null;
+		}
+		$data = ISPManager::getInstance()->getWebdomainForBxMultisite($siteName, $siteOwner);
 		foreach ($data as $item) {
 			$list[] = "<val key=\"{$item}\">{$item}</val>";
 		}
@@ -382,6 +415,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 	protected function checkOperations(): void
 	{
 		if ($this->getFromParam('site_platform') === 'bitrix') {
+			$this->makeBitrixCommands();
 			if ($this->getFlagFromParam('site_bitrix_settings_multisite') !== 'on') {
 				if ($this->getFlagFromParam('site_bitrix_operation_make_skeleton') === 'on') {
 					$this->makeBitrixSkeleton();
@@ -413,7 +447,12 @@ abstract class SiteEditAbstract extends AddonAbstract
 			if ($this->getFlagFromParam('site_bitrix_settings_b24') === 'on' && $this->getFlagFromParam('site_bitrix_settings_pushserver') === 'on') {
 				$this->makeBitrix24PushServer();
 			}
-			$this->makeBitrixCommands();
+		}
+		if ($this->getFromParam('site_platform') === 'laravel') {
+			$this->makeLaravelCommands();
+			if ($this->getFlagFromParam('site_laravel_settings_composer') === 'on') {
+				$this->makeLaravelComposer();
+			}
 		}
 	}
 
@@ -498,6 +537,22 @@ abstract class SiteEditAbstract extends AddonAbstract
 	protected function makeBitrix24PushServer(): void
 	{
 		addJob("ammina.bitrix.pushserver", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeLaravelComposer(): void
+	{
+		addJob("ammina.laravel.composer", [
+			'site' => $this->getFromParam('site_name'),
+			'owner' => $this->siteOwner,
+		]);
+	}
+
+	protected function makeLaravelCommands(): void
+	{
+		addJob("ammina.laravel.commands", [
 			'site' => $this->getFromParam('site_name'),
 			'owner' => $this->siteOwner,
 		]);

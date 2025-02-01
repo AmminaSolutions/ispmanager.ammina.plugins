@@ -177,7 +177,12 @@ abstract class CronAbstract
 				case 'ammina.redis.monitoring':
 					$runStatus = $this->jobAmminaRedisMonitoring($command['OPTIONS']);
 					break;
-
+				case 'ammina.laravel.composer':
+					$runStatus = $this->jobAmminaLaravelComposer($command['OPTIONS']);
+					break;
+				case 'ammina.laravel.commands':
+					$runStatus = $this->jobAmminaLaravelCommands($command['OPTIONS']);
+					break;
 			}
 			if ($runStatus) {
 				@unlink($jobPath);
@@ -633,7 +638,7 @@ abstract class CronAbstract
 		} else {
 			$content = explode("\n", file_get_contents($bashRcFile));
 		}
-		$aliasCommand = "alias \"use.{$siteName}\"=\"source ~/bin/.use.{$siteName}\"";
+		$aliasCommand = "alias \"use.{$siteName}\"=\"source ~/bin/.run.use.{$siteName}\"";
 		if (!str_contains(implode("\n", $content), $aliasCommand)) {
 			$content[] = $aliasCommand;
 			$content[] = '';
@@ -646,8 +651,7 @@ abstract class CronAbstract
 			$content = [
 				'#!/bin/bash',
 				'',
-				'export PATH="$HOME/bin/' . $siteName . ':$PATH_DEFAULT"',
-				'cd ~/www/' . $siteName,
+				'source $HOME/bin/.use.' . $siteName,
 			];
 			file_put_contents($useSiteDefault, implode("\n", $content));
 			exec("chown {$option['owner']}:{$option['owner']} {$useSiteDefault}");
@@ -659,13 +663,26 @@ abstract class CronAbstract
 			$content = [
 				"#!/bin/bash",
 				'',
+				'',
+				'export PATH="$HOME/bin/' . $siteName . ':$PATH_DEFAULT"',
+				'cd ~/www/' . $siteName,
+				'',
+			];
+			file_put_contents($useSitePaths, implode("\n", $content));
+			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
+			exec("chmod 0744 {$useSitePaths}");
+		}
+
+		$useSitePaths = "{$homeDir}/bin/.run.use.{$siteName}";
+		if (!file_exists($useSitePaths)) {
+			$content = [
+				"#!/bin/bash",
+				'',
 				'echo \'#!/bin/bash\' > $HOME/bin/use.default',
 				'echo "" >> $HOME/bin/use.default',
-				'echo \'export PATH="$HOME/bin/' . $siteName . ':$PATH_DEFAULT"\' >> $HOME/bin/use.default',
-				'echo \'cd ~/www/' . $siteName . '\' >> $HOME/bin/use.default',
+				'echo "source $HOME/bin/.use.' . $siteName . '" >> $HOME/bin/use.default',
 				'',
 				'source $HOME/bin/use.default',
-				'',
 			];
 			file_put_contents($useSitePaths, implode("\n", $content));
 			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
@@ -771,4 +788,108 @@ abstract class CronAbstract
 		}
 		return false;
 	}
+
+	protected function jobAmminaLaravelCommands(array $option): bool
+	{
+		$homeDir = Utils::getUserHomeDir($option['owner']);
+		$this->checkPhpRunCommand($option['site'], $option['owner']);
+		$siteName = Utils::idn_to_ascii($option['site']);
+
+		$bashRcFile = "{$homeDir}/.bashrc";
+		if (!file_exists($bashRcFile)) {
+			$content = [
+				'',
+				'export PATH_DEFAULT="$HOME/bin:$PATH"',
+				'',
+				'cd ~',
+				'. ~/bin/use.default',
+				'',
+			];
+		} else {
+			$content = explode("\n", file_get_contents($bashRcFile));
+		}
+		$aliasCommand = "alias \"use.{$siteName}\"=\"source ~/bin/.run.use.{$siteName}\"";
+		if (!str_contains(implode("\n", $content), $aliasCommand)) {
+			$content[] = $aliasCommand;
+			$content[] = '';
+			file_put_contents($bashRcFile, implode("\n", $content));
+			exec("chown {$option['owner']}:{$option['owner']} {$bashRcFile}");
+			exec("chmod 0644 {$bashRcFile}");
+		}
+		$useSiteDefault = "{$homeDir}/bin/use.default";
+		if (!file_exists($useSiteDefault)) {
+			$content = [
+				'#!/bin/bash',
+				'',
+				'source $HOME/bin/.use.' . $siteName,
+			];
+			file_put_contents($useSiteDefault, implode("\n", $content));
+			exec("chown {$option['owner']}:{$option['owner']} {$useSiteDefault}");
+			exec("chmod 0744 {$useSiteDefault}");
+		}
+
+		$useSitePaths = "{$homeDir}/bin/.use.{$siteName}";
+		if (!file_exists($useSitePaths)) {
+			$content = [
+				"#!/bin/bash",
+				'',
+				'',
+				'export PATH="$HOME/bin/' . $siteName . ':$HOME/.config/composer/vendor/bin:$PATH_DEFAULT"',
+				'export ARTISAN_CMDS_FILE=$HOME/bin/' . $siteName . '/artisan-cmds.txt',
+				'function _artisan() {',
+				'	COMP_WORDBREAKS=${COMP_WORDBREAKS//:}',
+				'	if [ -f "$ARTISAN_CMDS_FILE" ]; then',
+				'		COMMANDS=$(cat "$ARTISAN_CMDS_FILE")',
+				'	else',
+				'		COMMANDS=$(php artisan --raw --no-ansi list | awk \'{print $1}\')',
+				'	fi',
+				'	COMPREPLY=(`compgen -W "$COMMANDS" -- "${COMP_WORDS[COMP_CWORD]}"`)',
+				'	return 0',
+				'}',
+				'function artisan_cache() {',
+				'	if [[ "$1" == "clear" ]]; then',
+				'		echo -n "Removing commands cache file..."',
+				'		rm -f "$ARTISAN_CMDS_FILE"',
+				'		echo "done."',
+				'	else',
+				'		php artisan --raw --no-ansi list | awk \'{print $1}\' > "$ARTISAN_CMDS_FILE"',
+				'		echo $(wc -l "$ARTISAN_CMDS_FILE" | awk \'{print $1}\')" artisan commands cached."',
+				'	fi',
+				'}',
+				'',
+				'complete -o default -F _artisan art',
+				'complete -o default -F _artisan artisan',
+				'alias artisan="php artisan"',
+				'',
+				'cd ~/www/' . $siteName,
+				'',
+			];
+			file_put_contents($useSitePaths, implode("\n", $content));
+			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
+			exec("chmod 0744 {$useSitePaths}");
+		}
+
+		$useSitePaths = "{$homeDir}/bin/.run.use.{$siteName}";
+		if (!file_exists($useSitePaths)) {
+			$content = [
+				"#!/bin/bash",
+				'',
+				'echo \'#!/bin/bash\' > $HOME/bin/use.default',
+				'echo "" >> $HOME/bin/use.default',
+				'echo "source $HOME/bin/.use.' . $siteName . '" >> $HOME/bin/use.default',
+				'',
+				'source $HOME/bin/use.default',
+			];
+			file_put_contents($useSitePaths, implode("\n", $content));
+			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
+			exec("chmod 0744 {$useSitePaths}");
+		}
+		return true;
+	}
+
+	protected function jobAmminaLaravelComposer(array $option): bool
+	{
+		return $this->jobAmminaBitrixComposer($option);
+	}
+
 }

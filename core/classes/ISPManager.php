@@ -1067,10 +1067,16 @@ class ISPManager
 		}
 	}
 
-	public function getWebdomainForBxMultisite(string $currentName): array
+	public function getWebdomainForBxMultisite(?string $currentName = null, ?string $owner = null): array
 	{
 		$result = [];
-		$owner = $this->getWebdomainOwner($currentName, false);
+		if (is_null($owner)) {
+			if (!is_null($currentName)) {
+				$owner = $this->getWebdomainOwner($currentName, false);
+			} else {
+				return [];
+			}
+		}
 		$data = $this->command("webdomain", []);
 		if (!is_array($data['doc']['elem'])) {
 			return [];
