@@ -74,7 +74,7 @@
                 <field name="site_bitrix_settings_20100">
                     <input type="checkbox" name="site_bitrix_settings_20100"/>
                 </field>
-                <field name="site_bitrix_settings_b24">
+                <field name="site_bitrix_settings_b24" remove_if="new">
                     <input type="checkbox" name="site_bitrix_settings_b24">
                         <if value="on" hide="site_bitrix_settings_composite" shadow="yes"/>
                         <if value="off" hide="site_bitrix_settings_pushserver" shadow="yes"/>
@@ -82,7 +82,7 @@
                         <if value="on" hide="site_bitrix_modules_ammina_regions" shadow="yes"/>
                     </input>
                 </field>
-                <field name="site_bitrix_settings_pushserver" if="nginx">
+                <field name="site_bitrix_settings_pushserver" if="nginx" remove_if="new">
                     <input type="checkbox" name="site_bitrix_settings_pushserver"/>
                 </field>
                 <field name="site_bitrix_settings_composite" remove_if="new" if="nginx">
