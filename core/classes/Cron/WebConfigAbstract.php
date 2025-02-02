@@ -129,6 +129,9 @@ abstract class WebConfigAbstract
 		$oldContent = null;
 		if (file_exists($fileName)) {
 			$oldContent = file_get_contents($fileName);
+			if ($oldContent === $content) {
+				return true;
+			}
 		}
 		file_put_contents($fileName, $content);
 		if ($this->configTest()) {
