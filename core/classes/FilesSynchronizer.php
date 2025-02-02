@@ -200,8 +200,8 @@ class FilesSynchronizer
 		foreach ($this->afterCommands as $command) {
 			if ($showMessages) {
 				Console::notice("Выполняем команду: {$command}");
-				system($command);
 			}
+			@exec($command);
 		}
 	}
 }

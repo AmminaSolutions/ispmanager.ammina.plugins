@@ -40,12 +40,13 @@ abstract class CronAbstract
 		FilesSynchronizer::getInstance()->clearRules()->setDefaultRules()->run();
 		$this->checkDeletedDomains();
 		$this->runCycle();
+
 		while (true) {
 			$this->runCycle();
 			if ((int)date('s') >= 50) {
 				break;
 			}
-			sleep(5);
+			sleep(10);
 		}
 	}
 

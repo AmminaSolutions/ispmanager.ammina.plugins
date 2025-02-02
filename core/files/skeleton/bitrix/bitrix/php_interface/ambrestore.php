@@ -5426,296 +5426,296 @@ $APPLICATION = new AmminaBackupApplication(isset($arBackupConfigs) ? $arBackupCo
 $APPLICATION->doActionCheck();
 
 ?>
-	<!doctype html>
-	<html lang="en">
-	<head>
-		<meta charset="utf-8"/>
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-		<title>Ammina.Backup - загрузка резервной копии</title>
-		<style>
-            body {
-                background-color: #f5f5f5;
-                padding: 40px 0;
-            }
-		</style>
-	</head>
-	<body>
-	<?
-	global $APPLICATION;
-	$iCurrentProfile = $APPLICATION->getSelectProfileId();
-	$iCurrentDriver = $APPLICATION->getSelectDriverId();
-	if ($iCurrentDriver !== false) {
-		$oDriver = $APPLICATION->getDriverObject();
-	}
-	?>
-	<div class="container">
-		<div class="row">
-			<div class="col-12<?= ($APPLICATION->getModeDownload() ? '' : ' col-md-8 offset-md-2') ?>">
-				<div class="card">
-					<div class="card-header">
-						Ammina.Backup - загрузка резервной копии
-					</div>
-					<div class="card-body">
-						<?
-						if (!empty($APPLICATION->getErrors())) {
-							?>
-							<div class="alert alert-danger" role="alert">
-								<?= implode("<br>", $APPLICATION->getErrors()) ?>
-							</div>
-							<?
-						}
-						if (!empty($APPLICATION->getNotes())) {
-							?>
-							<div class="alert alert-success" role="alert">
-								<?= implode("<br>", $APPLICATION->getNotes()) ?>
-							</div>
-							<?
-						}
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+	<title>Ammina.Backup - загрузка резервной копии</title>
+	<style>
+        body {
+            background-color: #f5f5f5;
+            padding: 40px 0;
+        }
+	</style>
+</head>
+<body>
+<?
+global $APPLICATION;
+$iCurrentProfile = $APPLICATION->getSelectProfileId();
+$iCurrentDriver = $APPLICATION->getSelectDriverId();
+if ($iCurrentDriver !== false) {
+	$oDriver = $APPLICATION->getDriverObject();
+}
+?>
+<div class="container">
+	<div class="row">
+		<div class="col-12<?= ($APPLICATION->getModeDownload() ? '' : ' col-md-8 offset-md-2') ?>">
+			<div class="card">
+				<div class="card-header">
+					Ammina.Backup - загрузка резервной копии
+				</div>
+				<div class="card-body">
+					<?
+					if (!empty($APPLICATION->getErrors())) {
 						?>
-						<form id="abm-settings" method="post" enctype="multipart/form-data">
+						<div class="alert alert-danger" role="alert">
+							<?= implode("<br>", $APPLICATION->getErrors()) ?>
+						</div>
+						<?
+					}
+					if (!empty($APPLICATION->getNotes())) {
+						?>
+						<div class="alert alert-success" role="alert">
+							<?= implode("<br>", $APPLICATION->getNotes()) ?>
+						</div>
+						<?
+					}
+					?>
+					<form id="abm-settings" method="post" enctype="multipart/form-data">
+						<?
+						if ($APPLICATION->getModeDownload()) {
+							?>
+							<input type="hidden" name="action" value="checkDownload"/>
 							<?
-							if ($APPLICATION->getModeDownload()) {
-								?>
-								<input type="hidden" name="action" value="checkDownload"/>
-								<?
-								if (isset($_REQUEST['OPTIONS'])) {
-									foreach ($_REQUEST['OPTIONS'] as $k => $v) {
-										?>
-										<input type="hidden" name="OPTIONS[<?= htmlspecialchars($k) ?>]" value="<?= htmlspecialchars($v) ?>"/>
-										<?
-									}
-								}
-								if (isset($_REQUEST['DRIVER_SETTINGS'])) {
-									foreach ($_REQUEST['DRIVER_SETTINGS'] as $k => $v) {
-										?>
-										<input type="hidden" name="DRIVER_SETTINGS[<?= htmlspecialchars($k) ?>]" value="<?= htmlspecialchars($v) ?>"/>
-										<?
-									}
-								}
-								if (isset($_REQUEST['BACKUP_FILE'])) {
+							if (isset($_REQUEST['OPTIONS'])) {
+								foreach ($_REQUEST['OPTIONS'] as $k => $v) {
 									?>
-									<input type="hidden" name="BACKUP_FILE" value="<?= htmlspecialchars($_REQUEST['BACKUP_FILE']) ?>"/>
+									<input type="hidden" name="OPTIONS[<?= htmlspecialchars($k) ?>]" value="<?= htmlspecialchars($v) ?>"/>
 									<?
-								}
-								$arCurrentBackup = $APPLICATION->getStatusDownload();
-								?>
-								<div class="form-group">
-									<label for="OPTIONS_PROFILE">Общий статус загрузки</label>
-									<div class="progress">
-										<div class="progress-bar<?= ($arCurrentBackup['TOTAL_PERCENT'] < 100 ? ' progress-bar-striped progress-bar-animated' : '') ?> bg-success" role="progressbar" aria-valuenow="<?= $arCurrentBackup['TOTAL_PERCENT'] ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?= $arCurrentBackup['TOTAL_PERCENT'] ?>%"><?= $arCurrentBackup['TOTAL_PERCENT'] ?>
-											%
-										</div>
-									</div>
-								</div>
-								<div class="table-responsive">
-									<table class="table table-sm">
-										<thead>
-										<tr>
-											<th scope="col">Файл</th>
-											<th scope="col">Размер</th>
-											<th scope="col">Загружено</th>
-											<th scope="col">Статус</th>
-										</tr>
-										</thead>
-										<tbody>
-										<?
-										foreach ($arCurrentBackup['FILES'] as $strFile => $arFile) {
-											$strClass = '';
-											if ($arFile['STATUS'] == "OK") {
-												$strClass = 'table-success';
-											} elseif ($arFile['STATUS'] == "DOWNLOAD") {
-												$strClass = 'table-info';
-											} elseif ($arFile['STATUS'] == "DOWNLOAD_ERROR") {
-												$strClass = 'table-danger';
-											}
-											?>
-											<tr class="<?= $strClass ?>">
-												<th scope="row"><?= $arFile['FILE_NAME'] ?></th>
-												<td><?= AmminaBackupFormatSize($arFile['SIZE']) ?></td>
-												<td>
-													<?
-													if ($arFile['STATUS'] == "DOWNLOAD" || $arFile['STATUS'] == "OK") {
-														echo AmminaBackupFormatSize($arFile['TOTAL_DOWNLOAD']);
-													}
-													?>
-												</td>
-												<td>
-													<?
-													if ($arFile['STATUS'] == "DOWNLOAD") {
-														?>
-														<div class="progress">
-															<div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" aria-valuenow="<?= $arCurrentBackup['TOTAL_PERCENT'] ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?= $arFile['PERCENT'] ?>%;"><?= $arFile['PERCENT'] ?>
-																%
-															</div>
-														</div>
-														<?
-													} elseif ($arFile['STATUS'] == "OK") {
-														echo "Успешно";
-													} elseif ($arFile['STATUS'] == "DOWNLOAD_ERROR") {
-														echo "Ошибка загрузки";
-													}
-													?>
-												</td>
-											</tr>
-											<?
-										}
-										?>
-										</tbody>
-									</table>
-								</div>
-								<div class="form-group">
-									<a href="javascript:void(0)" class="btn btn-secondary" data-toggle="tooltip" data-placement="top" title="Вернуться к настройкам загрузки резервной копии" id="amb-back">Вернуться</a>
-									<a href="javascript:void(0)" class="btn btn-primary float-right<?= ($arCurrentBackup['TOTAL_PERCENT'] != 100 ? ' disabled' : '') ?>" data-toggle="tooltip" data-placement="top" title="Удалить скрипт загрузки и перейти к восстановлению резервной копии" id="amb-gorestore"<?= ($arCurrentBackup['TOTAL_PERCENT'] != 100 ? ' disabled="disabled"' : '') ?>>Перейти
-										к восстановлению</a>
-								</div>
-								<?
-							} else {
-								?>
-								<input type="hidden" name="action" value=""/>
-								<div class="form-group">
-									<label for="OPTIONS_PROFILE">Сохраненная настройка</label>
-									<select class="form-control" id="OPTIONS_PROFILE" name="OPTIONS[PROFILE]">
-										<option value="0"<?= ($iCurrentProfile <= 0 ? ' selected="selected"' : "") ?>>
-											(указать вручную)
-										</option>
-										<?
-										foreach ($APPLICATION->getAllProfiles() as $id => $arConfig) {
-											?>
-											<option value="<?= $id ?>"<?= ($iCurrentProfile == $id ? ' selected="selected"' : "") ?>><?= $arConfig['NAME'] ?></option>
-											<?
-										}
-										?>
-									</select>
-								</div>
-								<div class="form-group">
-									<label for="OPTIONS_DRIVER">Драйвер</label>
-									<select class="form-control" id="OPTIONS_DRIVER" name="OPTIONS[DRIVER]"<?= ($iCurrentProfile > 0 ? ' disabled="disabled"' : "") ?>>
-										<option value="">(выберите драйвер)</option>
-										<?
-										foreach ($APPLICATION->getAllDrivers() as $driver => $arDriver) {
-											?>
-											<option value="<?= $driver ?>"<?= ($iCurrentDriver == $driver ? ' selected="selected"' : "") ?>><?= $arDriver['NAME'] ?></option>
-											<?
-										}
-										?>
-									</select>
-								</div>
-								<?
-								if ($iCurrentDriver !== false) {
-									?>
-									<hr/>
-									<h5 class="card-title">Параметры подключения драйвера</h5>
-									<?= $oDriver->doRenderSettings($iCurrentProfile <= 0); ?>
-									<hr/>
-									<div class="form-group">
-										<label for="OPTIONS_PATH">Путь хранения бэкапов</label>
-										<input type="text" class="form-control" id="OPTIONS_PATH" name="OPTIONS[PATH]" value="<?= htmlspecialchars($APPLICATION->getBackupPath()) ?>"<?= ($iCurrentProfile > 0 ? ' disabled="disabled"' : "") ?>>
-									</div>
-									<div class="text-right">
-										<a href="javascript:void(0)" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Проверить подключение и получить список резервных копий" id="amb-checksettings">Проверить
-											подключение</a>
-									</div>
-									<?
-									if (isset($_SESSION['LIST_BACKUPS']) && !empty($_SESSION['LIST_BACKUPS'])) {
-										?>
-										<div class="form-group">
-											<label for="BACKUP_FILE">Резервная копия</label>
-											<select class="form-control" id="BACKUP_FILE" name="BACKUP_FILE">
-												<option value=""<?= ($iCurrentProfile <= 0 ? ' selected="selected"' : "") ?>>
-													(выберите резервную копию)
-												</option>
-												<?
-												foreach ($_SESSION['LIST_BACKUPS'] as $strName => $arBackup) {
-													?>
-													<option value="<?= $strName ?>"<?= ($APPLICATION->getBackupFile() == $strName ? ' selected="selected"' : "") ?>><?= $arBackup['BACKUP_NAME'] ?>
-														от <?= date("d.m.Y H:i:s", $arBackup['BACKUP_TIME']) ?>,
-														файлов: <?= count($arBackup['FILES']) ?>,
-														размер: <?= AmminaBackupFormatSize($arBackup['TOTAL_SIZE']) ?></option>
-													<?
-												}
-												?>
-											</select>
-										</div>
-										<div class="text-right">
-											<a href="javascript:void(0)" class="btn btn-primary disabled" data-toggle="tooltip" data-placement="top" title="Начать загрузку выбранной резервной копии" id="amb-download" disabled="disabled">Загрузить</a>
-										</div>
-										<?
-									} else {
-										?>
-										<div class="alert alert-danger mt-3" role="alert">
-											Резервные копии не найдены или не указаны (неправильно указаны) настройки
-											подключения, либо не проверены настройки подключения
-										</div>
-										<?
-									}
 								}
 							}
+							if (isset($_REQUEST['DRIVER_SETTINGS'])) {
+								foreach ($_REQUEST['DRIVER_SETTINGS'] as $k => $v) {
+									?>
+									<input type="hidden" name="DRIVER_SETTINGS[<?= htmlspecialchars($k) ?>]" value="<?= htmlspecialchars($v) ?>"/>
+									<?
+								}
+							}
+							if (isset($_REQUEST['BACKUP_FILE'])) {
+								?>
+								<input type="hidden" name="BACKUP_FILE" value="<?= htmlspecialchars($_REQUEST['BACKUP_FILE']) ?>"/>
+								<?
+							}
+							$arCurrentBackup = $APPLICATION->getStatusDownload();
 							?>
-						</form>
-					</div>
+							<div class="form-group">
+								<label for="OPTIONS_PROFILE">Общий статус загрузки</label>
+								<div class="progress">
+									<div class="progress-bar<?= ($arCurrentBackup['TOTAL_PERCENT'] < 100 ? ' progress-bar-striped progress-bar-animated' : '') ?> bg-success" role="progressbar" aria-valuenow="<?= $arCurrentBackup['TOTAL_PERCENT'] ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?= $arCurrentBackup['TOTAL_PERCENT'] ?>%"><?= $arCurrentBackup['TOTAL_PERCENT'] ?>
+										%
+									</div>
+								</div>
+							</div>
+							<div class="table-responsive">
+								<table class="table table-sm">
+									<thead>
+									<tr>
+										<th scope="col">Файл</th>
+										<th scope="col">Размер</th>
+										<th scope="col">Загружено</th>
+										<th scope="col">Статус</th>
+									</tr>
+									</thead>
+									<tbody>
+									<?
+									foreach ($arCurrentBackup['FILES'] as $strFile => $arFile) {
+										$strClass = '';
+										if ($arFile['STATUS'] == "OK") {
+											$strClass = 'table-success';
+										} elseif ($arFile['STATUS'] == "DOWNLOAD") {
+											$strClass = 'table-info';
+										} elseif ($arFile['STATUS'] == "DOWNLOAD_ERROR") {
+											$strClass = 'table-danger';
+										}
+										?>
+										<tr class="<?= $strClass ?>">
+											<th scope="row"><?= $arFile['FILE_NAME'] ?></th>
+											<td><?= AmminaBackupFormatSize($arFile['SIZE']) ?></td>
+											<td>
+												<?
+												if ($arFile['STATUS'] == "DOWNLOAD" || $arFile['STATUS'] == "OK") {
+													echo AmminaBackupFormatSize($arFile['TOTAL_DOWNLOAD']);
+												}
+												?>
+											</td>
+											<td>
+												<?
+												if ($arFile['STATUS'] == "DOWNLOAD") {
+													?>
+													<div class="progress">
+														<div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" aria-valuenow="<?= $arCurrentBackup['TOTAL_PERCENT'] ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?= $arFile['PERCENT'] ?>%;"><?= $arFile['PERCENT'] ?>
+															%
+														</div>
+													</div>
+													<?
+												} elseif ($arFile['STATUS'] == "OK") {
+													echo "Успешно";
+												} elseif ($arFile['STATUS'] == "DOWNLOAD_ERROR") {
+													echo "Ошибка загрузки";
+												}
+												?>
+											</td>
+										</tr>
+										<?
+									}
+									?>
+									</tbody>
+								</table>
+							</div>
+							<div class="form-group">
+								<a href="javascript:void(0)" class="btn btn-secondary" data-toggle="tooltip" data-placement="top" title="Вернуться к настройкам загрузки резервной копии" id="amb-back">Вернуться</a>
+								<a href="javascript:void(0)" class="btn btn-primary float-right<?= ($arCurrentBackup['TOTAL_PERCENT'] != 100 ? ' disabled' : '') ?>" data-toggle="tooltip" data-placement="top" title="Удалить скрипт загрузки и перейти к восстановлению резервной копии" id="amb-gorestore"<?= ($arCurrentBackup['TOTAL_PERCENT'] != 100 ? ' disabled="disabled"' : '') ?>>Перейти
+									к восстановлению</a>
+							</div>
+							<?
+						} else {
+							?>
+							<input type="hidden" name="action" value=""/>
+							<div class="form-group">
+								<label for="OPTIONS_PROFILE">Сохраненная настройка</label>
+								<select class="form-control" id="OPTIONS_PROFILE" name="OPTIONS[PROFILE]">
+									<option value="0"<?= ($iCurrentProfile <= 0 ? ' selected="selected"' : "") ?>>
+										(указать вручную)
+									</option>
+									<?
+									foreach ($APPLICATION->getAllProfiles() as $id => $arConfig) {
+										?>
+										<option value="<?= $id ?>"<?= ($iCurrentProfile == $id ? ' selected="selected"' : "") ?>><?= $arConfig['NAME'] ?></option>
+										<?
+									}
+									?>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="OPTIONS_DRIVER">Драйвер</label>
+								<select class="form-control" id="OPTIONS_DRIVER" name="OPTIONS[DRIVER]"<?= ($iCurrentProfile > 0 ? ' disabled="disabled"' : "") ?>>
+									<option value="">(выберите драйвер)</option>
+									<?
+									foreach ($APPLICATION->getAllDrivers() as $driver => $arDriver) {
+										?>
+										<option value="<?= $driver ?>"<?= ($iCurrentDriver == $driver ? ' selected="selected"' : "") ?>><?= $arDriver['NAME'] ?></option>
+										<?
+									}
+									?>
+								</select>
+							</div>
+							<?
+							if ($iCurrentDriver !== false) {
+								?>
+								<hr/>
+								<h5 class="card-title">Параметры подключения драйвера</h5>
+								<?= $oDriver->doRenderSettings($iCurrentProfile <= 0); ?>
+								<hr/>
+								<div class="form-group">
+									<label for="OPTIONS_PATH">Путь хранения бэкапов</label>
+									<input type="text" class="form-control" id="OPTIONS_PATH" name="OPTIONS[PATH]" value="<?= htmlspecialchars($APPLICATION->getBackupPath()) ?>"<?= ($iCurrentProfile > 0 ? ' disabled="disabled"' : "") ?>>
+								</div>
+								<div class="text-right">
+									<a href="javascript:void(0)" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Проверить подключение и получить список резервных копий" id="amb-checksettings">Проверить
+										подключение</a>
+								</div>
+								<?
+								if (isset($_SESSION['LIST_BACKUPS']) && !empty($_SESSION['LIST_BACKUPS'])) {
+									?>
+									<div class="form-group">
+										<label for="BACKUP_FILE">Резервная копия</label>
+										<select class="form-control" id="BACKUP_FILE" name="BACKUP_FILE">
+											<option value=""<?= ($iCurrentProfile <= 0 ? ' selected="selected"' : "") ?>>
+												(выберите резервную копию)
+											</option>
+											<?
+											foreach ($_SESSION['LIST_BACKUPS'] as $strName => $arBackup) {
+												?>
+												<option value="<?= $strName ?>"<?= ($APPLICATION->getBackupFile() == $strName ? ' selected="selected"' : "") ?>><?= $arBackup['BACKUP_NAME'] ?>
+													от <?= date("d.m.Y H:i:s", $arBackup['BACKUP_TIME']) ?>,
+													файлов: <?= count($arBackup['FILES']) ?>,
+													размер: <?= AmminaBackupFormatSize($arBackup['TOTAL_SIZE']) ?></option>
+												<?
+											}
+											?>
+										</select>
+									</div>
+									<div class="text-right">
+										<a href="javascript:void(0)" class="btn btn-primary disabled" data-toggle="tooltip" data-placement="top" title="Начать загрузку выбранной резервной копии" id="amb-download" disabled="disabled">Загрузить</a>
+									</div>
+									<?
+								} else {
+									?>
+									<div class="alert alert-danger mt-3" role="alert">
+										Резервные копии не найдены или не указаны (неправильно указаны) настройки
+										подключения, либо не проверены настройки подключения
+									</div>
+									<?
+								}
+							}
+						}
+						?>
+					</form>
 				</div>
 			</div>
 		</div>
 	</div>
+</div>
 
-	<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-	<script>
-        $(document).ready(function () {
-            $('[data-toggle="tooltip"]').tooltip();
-            var mainForm = $("#abm-settings");
-            mainForm.find("#OPTIONS_PROFILE").change(function () {
-                mainForm.find("[name='action']").val("changeProfile");
-                mainForm.submit();
-            });
-            mainForm.find("#OPTIONS_DRIVER").change(function () {
-                mainForm.find("[name='action']").val("changeDriver");
-                mainForm.submit();
-            });
-            mainForm.find("#amb-checksettings").click(function () {
-                mainForm.find("[name='action']").val("checkSettings");
-                mainForm.submit();
-            });
-            mainForm.find("#BACKUP_FILE").change(function () {
-                if ($(this).val() != "") {
-                    mainForm.find("#amb-download").removeClass("disabled");
-                    mainForm.find("#amb-download").removeAttr("disabled");
-                } else {
-                    mainForm.find("#amb-download").addClass("disabled");
-                    mainForm.find("#amb-download").attr("disabled", "disabled");
-                }
-            });
-            mainForm.find("#amb-download").click(function () {
-                if ($(this).attr("disabled") != "disabled") {
-                    mainForm.find("[name='action']").val("startDownload");
-                    mainForm.submit();
-                }
-            });
-            mainForm.find("#amb-back").click(function () {
-                mainForm.find("[name='action']").val("checkSettings");
-                mainForm.submit();
-            });
-            mainForm.find("#amb-gorestore").click(function () {
-                if ($(this).attr("disabled") != "disabled") {
-                    mainForm.find("[name='action']").val("goRestore");
-                    mainForm.submit();
-                }
-            });
-			<?
-			if ($APPLICATION->getModeDownload() && $arCurrentBackup['STATUS'] != "OK") {
-			?>
-            window.setTimeout(function () {
-                $("#abm-settings").submit();
-            }, 5000);
-			<?
-			}
-			?>
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+        var mainForm = $("#abm-settings");
+        mainForm.find("#OPTIONS_PROFILE").change(function () {
+            mainForm.find("[name='action']").val("changeProfile");
+            mainForm.submit();
         });
-	</script>
-	</body>
-	</html>
+        mainForm.find("#OPTIONS_DRIVER").change(function () {
+            mainForm.find("[name='action']").val("changeDriver");
+            mainForm.submit();
+        });
+        mainForm.find("#amb-checksettings").click(function () {
+            mainForm.find("[name='action']").val("checkSettings");
+            mainForm.submit();
+        });
+        mainForm.find("#BACKUP_FILE").change(function () {
+            if ($(this).val() != "") {
+                mainForm.find("#amb-download").removeClass("disabled");
+                mainForm.find("#amb-download").removeAttr("disabled");
+            } else {
+                mainForm.find("#amb-download").addClass("disabled");
+                mainForm.find("#amb-download").attr("disabled", "disabled");
+            }
+        });
+        mainForm.find("#amb-download").click(function () {
+            if ($(this).attr("disabled") != "disabled") {
+                mainForm.find("[name='action']").val("startDownload");
+                mainForm.submit();
+            }
+        });
+        mainForm.find("#amb-back").click(function () {
+            mainForm.find("[name='action']").val("checkSettings");
+            mainForm.submit();
+        });
+        mainForm.find("#amb-gorestore").click(function () {
+            if ($(this).attr("disabled") != "disabled") {
+                mainForm.find("[name='action']").val("goRestore");
+                mainForm.submit();
+            }
+        });
+		<?
+		if ($APPLICATION->getModeDownload() && $arCurrentBackup['STATUS'] != "OK") {
+		?>
+        window.setTimeout(function () {
+            $("#abm-settings").submit();
+        }, 5000);
+		<?
+		}
+		?>
+    });
+</script>
+</body>
+</html>
 
 <?
 
