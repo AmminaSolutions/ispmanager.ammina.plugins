@@ -775,6 +775,14 @@ abstract class CronAbstract
 			->addRule('bx-push-server/etc', '/etc')
 			->run();
 		$fileSync->clearRules()->setDefaultRules();
+
+		sleep(20);
+		@exec("/etc/init.d/nginx restart");
+		@exec("systemctl daemon-reload");
+		@exec("systemctl enable push-server.service");
+		@exec("/etc/init.d/push-server-multi reset");
+		@exec("service push-server-multi start");
+
 		return true;
 	}
 

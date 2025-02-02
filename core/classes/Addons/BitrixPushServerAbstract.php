@@ -199,12 +199,8 @@ abstract class BitrixPushServerAbstract extends AddonAbstract
 			foreach ($templateReplace as $k => $v) {
 				$template = str_replace('[% ' . $k . ' %]', $v, $template);
 			}
+			sleep(20);
 			file_put_contents($this->rtcServerConfigFileName, $template);
-			@exec("/etc/init.d/nginx restart");
-			@exec("systemctl daemon-reload");
-			@exec("systemctl enable push-server.service");
-			@exec("/etc/init.d/push-server-multi reset");
-			@exec("service push-server-multi start");
 			addJob("ammina.bitrix.install.pushserver", []);
 		} else {
 			@unlink($this->rtcServerConfigFileName);
