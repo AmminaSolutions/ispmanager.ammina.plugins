@@ -196,6 +196,7 @@ abstract class InstallerAbstract
 		$this->installPhpSettingsShowUsers();
 		$this->installPhpSettings();
 		$this->installMysqlSettings();
+		$this->upgradeSystem();
 		$this->installFiles();
 		$this->installAmminaIspCron();
 	}
@@ -1230,5 +1231,11 @@ abstract class InstallerAbstract
 		Console::showColoredString("Добавляем системное задание AmminaISP", 'light_green', null, true);
 		ISPManager::getInstance()->makeAmminaIspCronCommand();
 		$this->setTaskComplete('amminaisp_cron');
+	}
+
+	public function upgradeSystem():void{
+		exec('apt update > /dev/null 2>&1');
+		exec('apt -y upgrade > /dev/null 2>&1');
+		exec('apt -y autoremove > /dev/null 2>&1');
 	}
 }

@@ -19,6 +19,7 @@ location ~* /\.(svn|hg|git) { deny all; }
 location ~* ^/bitrix/(modules|local_cache|stack_cache|managed_cache|php_interface|cache) { deny all; }
 location ~* ^/bitrix/\.settings\.php { deny all; }
 location ~* ^/bitrix/\.settings_extra\.php { deny all; }
+location ~* ^/bitrix/error { deny all; }
 location ~* ^/local/(modules|php_interface) { deny all; }
 location ~* ^/upload/1c_[^/]+/ { deny all; }
 location ~* /\.\./ { deny all; }

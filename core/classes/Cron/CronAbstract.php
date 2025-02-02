@@ -103,6 +103,7 @@ abstract class CronAbstract
 	protected function checkDeletedDomains(): void
 	{
 		$webdomains = ISPManager::getInstance()->getWebdomains();
+		$checkHome = [];
 		/**
 		 * @var NginxConfigAbstract $nginx
 		 */
@@ -113,6 +114,7 @@ abstract class CronAbstract
 				return ($v['domain'] === $existsV['name']);
 			}, ARRAY_FILTER_USE_BOTH);
 			if (empty($currentDomain)) {
+				$checkHome[$existsV['domain']] = $existsV['owner'];
 				@unlink($existsV['path']);
 			}
 		}
@@ -127,7 +129,33 @@ abstract class CronAbstract
 				return ($v['domain'] === $existsV['name']);
 			}, ARRAY_FILTER_USE_BOTH);
 			if (empty($currentDomain)) {
+				$checkHome[$existsV['domain']] = $existsV['owner'];
 				@unlink($existsV['path']);
+			}
+		}
+		foreach ($checkHome as $domain => $owner) {
+			$home = "/var/www/{$owner}/data";
+			if (file_exists("{$home}/bin/.run.use.{$domain}")) {
+				@unlink("{$home}/bin/.run.use.{$domain}");
+			}
+			if (file_exists("{$home}/bin/.use.{$domain}")) {
+				@unlink("{$home}/bin/.use.{$domain}");
+			}
+			if (file_exists("{$home}/bin/{$domain}")) {
+				@exec("rm -Rf {$home}/bin/{$domain}");
+			}
+			if (file_exists("{$home}/.bashrc")) {
+				$content = explode("\n", file_get_contents("{$home}/.bashrc"));
+				$changed = false;
+				foreach ($content as $k => $v) {
+					if (str_starts_with($v, "alias \"use.{$domain}\"")) {
+						unset($content[$k]);
+						$changed = true;
+					}
+				}
+				if ($changed) {
+					file_put_contents("{$home}/.bashrc", implode("\n", $content));
+				}
 			}
 		}
 	}
@@ -540,7 +568,7 @@ abstract class CronAbstract
 		if (!isset($settings['exception_handling'])) {
 			$settings['exception_handling'] = [
 				'value' => [
-					'debug' => true,
+					'debug' => false,
 					'handled_errors_types' => 4437,
 					'exception_errors_types' => 4437,
 					'ignore_silence' => false,
