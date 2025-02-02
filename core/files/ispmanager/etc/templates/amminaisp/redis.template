@@ -392,7 +392,7 @@ always-show-logo no
 # By default, Redis modifies the process title (as seen in 'top' and 'ps') to
 # provide some runtime information. It is possible to disable this and leave
 # the process name as executed by setting the following to no.
-set-proc-title yes
+#set-proc-title yes
 
 # When changing the process title, Redis uses the following template to construct
 # the modified title.
@@ -409,7 +409,7 @@ set-proc-title yes
 # {unixsocket}      Unix domain socket listening on, or "".
 # {config-file}     Name of configuration file used.
 #
-proc-title-template "{title} {listen-addr} {server-mode}"
+#proc-title-template "{title} {listen-addr} {server-mode}"
 
 ################################ SNAPSHOTTING  ################################
 
@@ -623,7 +623,7 @@ repl-diskless-sync-delay 5
 # the replication start before the maximum delay is reached if the maximum
 # number of replicas expected have connected. Default of 0 means that the
 # maximum is not defined and Redis will wait the full delay.
-repl-diskless-sync-max-replicas 0
+#repl-diskless-sync-max-replicas 0
 
 # -----------------------------------------------------------------------------
 # WARNING: RDB diskless load is experimental. Since in this setup the replica
@@ -1268,7 +1268,7 @@ lazyfree-lazy-user-del no
 # commands. When neither flag is passed, this directive will be used to determine
 # if the data should be deleted asynchronously.
 
-lazyfree-lazy-user-flush no
+#lazyfree-lazy-user-flush no
 
 ################################ THREADED I/O #################################
 
@@ -1358,7 +1358,7 @@ oom-score-adj-values 0 200 800
 # If for some reason you prefer to keep it enabled, you can set this config to
 # "no" and the kernel global to "always".
 
-disable-thp yes
+#disable-thp yes
 
 ############################## APPEND ONLY MODE ###############################
 
@@ -1413,7 +1413,7 @@ appendfilename "appendonly.aof"
 # directory. The name of the directory is determined by the appenddirname
 # configuration parameter.
 
-appenddirname "appendonlydir"
+#appenddirname "appendonlydir"
 
 # The fsync() call tells the Operating System to actually write data on disk
 # instead of waiting for more data in the output buffer. Some OS will really flush
@@ -1515,7 +1515,7 @@ aof-use-rdb-preamble yes
 # Redis supports recording timestamp annotations in the AOF to support restoring
 # the data from a specific point-in-time. However, using this capability changes
 # the AOF format in a way that may not be compatible with existing AOF parsers.
-aof-timestamp-enabled no
+#aof-timestamp-enabled no
 
 ################################ SHUTDOWN #####################################
 
@@ -1914,8 +1914,8 @@ notify-keyspace-events ""
 # Hashes are encoded using a memory efficient data structure when they have a
 # small number of entries, and the biggest entry does not exceed a given
 # threshold. These thresholds can be configured using the following directives.
-hash-max-listpack-entries 512
-hash-max-listpack-value 64
+#hash-max-listpack-entries 512
+#hash-max-listpack-value 64
 
 # Lists are also encoded in a special way to save a lot of space.
 # The number of entries allowed per internal list node can be specified
@@ -1930,7 +1930,7 @@ hash-max-listpack-value 64
 # per list node.
 # The highest performing option is usually -2 (8 Kb size) or -1 (4 Kb size),
 # but if your use case is unique, adjust the settings as necessary.
-list-max-listpack-size -2
+#list-max-listpack-size -2
 
 # Lists may also be compressed.
 # Compress depth is the number of quicklist ziplist nodes from *each* side of
@@ -1958,8 +1958,8 @@ set-max-intset-entries 512
 # Similarly to hashes and lists, sorted sets are also specially encoded in
 # order to save a lot of space. This encoding is only used when the length and
 # elements of a sorted set are below the following limits:
-zset-max-listpack-entries 128
-zset-max-listpack-value 64
+#zset-max-listpack-entries 128
+#zset-max-listpack-value 64
 
 # HyperLogLog sparse representation bytes limit. The limit includes the
 # 16 bytes header. When an HyperLogLog using the sparse representation crosses

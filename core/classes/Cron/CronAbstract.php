@@ -37,10 +37,9 @@ abstract class CronAbstract
 		if ($this->checkUpdate()) {
 			return;
 		}
+		FilesSynchronizer::getInstance()->clearRules()->setDefaultRules()->run();
 		$this->checkDeletedDomains();
 		$this->runCycle();
-		return;
-
 		while (true) {
 			$this->runCycle();
 			if ((int)date('s') >= 50) {

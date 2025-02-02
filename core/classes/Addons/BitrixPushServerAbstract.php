@@ -201,6 +201,7 @@ abstract class BitrixPushServerAbstract extends AddonAbstract
 			}
 			file_put_contents($this->rtcServerConfigFileName, $template);
 			@exec("/etc/init.d/nginx restart");
+			@exec("systemctl daemon-reload");
 			@exec("systemctl enable push-server.service");
 			@exec("/etc/init.d/push-server-multi reset");
 			@exec("service push-server-multi start");
