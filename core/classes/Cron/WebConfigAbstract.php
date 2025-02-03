@@ -4,6 +4,7 @@ namespace AmminaISP\Core\Cron;
 
 use AmminaISP\Core\ISPManager;
 use function AmminaISP\Core\checkDirPath;
+use function AmminaISP\Core\execShellCommand;
 
 abstract class WebConfigAbstract
 {
@@ -54,22 +55,10 @@ abstract class WebConfigAbstract
 		if ($this->configTestCommand == '') {
 			return true;
 		}
-		$descriptor = [
-			["pipe", "r"],
-			["pipe", "w"],
-			["pipe", "w"],
-		];
-		$pipes = [];
-		$proc = proc_open($this->configTestCommand, $descriptor, $pipes);
-		if (is_resource($proc)) {
-			sleep(2);
-			foreach ($pipes as $pipe) {
-				fclose($pipe);
-			}
-			$return = proc_close($proc);
-			if ($return === 0) {
-				return true;
-			}
+		execShellCommand($this->configTestCommand, $output, $return);
+		sleep(2);
+		if ($return === 0) {
+			return true;
 		}
 		return false;
 	}
@@ -84,22 +73,7 @@ abstract class WebConfigAbstract
 			return;
 		}
 		$complete = false;
-		$descriptor = [
-			["pipe", "r"],
-			["pipe", "w"],
-			["pipe", "w"],
-		];
-		$pipes = [];
-		$proc = proc_open($this->restartCommand, $descriptor, $pipes);
-		if (is_resource($proc)) {
-			foreach ($pipes as $pipe) {
-				fclose($pipe);
-			}
-			$return = proc_close($proc);
-			if ($return === 0) {
-				$complete = true;
-			}
-		}
+		execShellCommand($this->restartCommand);
 		if ($complete) {
 			if ($this->pidFile != '') {
 				$i = 30;
@@ -137,6 +111,7 @@ abstract class WebConfigAbstract
 		if ($this->configTest()) {
 			$this->restartService();
 		} else {
+			echo $this->configTestCommand . ' failed' . PHP_EOL;
 			if (!is_null($oldContent)) {
 				file_put_contents($fileName, $oldContent);
 			} else {

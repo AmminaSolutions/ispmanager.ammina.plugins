@@ -8,6 +8,7 @@ use AmminaISP\Core\Utils;
 use function AmminaISP\Core\addJob;
 use function AmminaISP\Core\boolToFlag;
 use function AmminaISP\Core\checkDirPath;
+use function AmminaISP\Core\execShellCommand;
 use function AmminaISP\Core\findFile;
 
 abstract class SiteEditAbstract extends AddonAbstract
@@ -288,7 +289,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 				chmod($wrapperFilePath, 0555);
 				chown($wrapperFilePath, $this->siteOwner);
 				chgrp($wrapperFilePath, $this->siteOwner);
-				exec("ln " . $wrapperFilePath . ' ' . $wrapperLinkPath);
+				execShellCommand("ln " . $wrapperFilePath . ' ' . $wrapperLinkPath);
 
 				$iniContent = file_get_contents($iniOriginalFilePath);
 				foreach ($iniOptions as $key => $value) {
@@ -300,7 +301,7 @@ abstract class SiteEditAbstract extends AddonAbstract
 				chmod($iniFilePath, 0400);
 				chown($iniFilePath, $this->siteOwner);
 				chgrp($iniFilePath, $this->siteOwner);
-				exec("ln " . $iniFilePath . ' ' . $iniLinkPath);
+				execShellCommand("ln " . $iniFilePath . ' ' . $iniLinkPath);
 				return "{$wrapperFilePath}";
 			}
 		}

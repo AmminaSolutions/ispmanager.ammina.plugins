@@ -3,6 +3,7 @@
 namespace AmminaISP\Core\Addons;
 
 use function AmminaISP\Core\addJob;
+use function AmminaISP\Core\execShellCommand;
 use function AmminaISP\Core\isOn;
 
 abstract class RedisAbstract extends AddonAbstract
@@ -52,7 +53,7 @@ abstract class RedisAbstract extends AddonAbstract
 
 	public function saveForm(): void
 	{
-		@exec("service redis stop");
+		@execShellCommand("service redis stop");
 		$this->fillIniFromParams();
 		$this->saveIni();
 		$this->fillDataAppendFromIni();
@@ -73,7 +74,7 @@ abstract class RedisAbstract extends AddonAbstract
 			file_put_contents($this->redisOptionsFile, $template);
 			$this->checkMonitoring();
 			$this->checkSystemSettings();
-			@exec("service redis start");
+			@execShellCommand("service redis start");
 		}
 	}
 

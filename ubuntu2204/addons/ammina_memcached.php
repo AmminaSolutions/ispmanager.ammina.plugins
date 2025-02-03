@@ -1,8 +1,10 @@
 <?php
 
+use function AmminaISP\Core\execShellCommand;
+
 include_once(__DIR__ . "/../include.php");
 
-@exec("systemctl stop cron");
+execShellCommand("systemctl stop cron");
 $memcached = new \AmminaISP\Ubuntu2204\Addons\Memcached();
 $memcached->run();
-@exec("systemctl start cron");
+execShellCommand("systemctl start cron");

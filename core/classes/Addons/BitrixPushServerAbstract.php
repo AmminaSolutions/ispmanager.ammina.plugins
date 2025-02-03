@@ -6,6 +6,7 @@ use AmminaISP\Core\ISPManager;
 use AmminaISP\Core\Utils;
 use function AmminaISP\Core\addJob;
 use function AmminaISP\Core\checkDirPath as checkDirPathAlias;
+use function AmminaISP\Core\execShellCommand;
 use function AmminaISP\Core\isOn;
 
 abstract class BitrixPushServerAbstract extends AddonAbstract
@@ -128,7 +129,7 @@ abstract class BitrixPushServerAbstract extends AddonAbstract
 					$certPath = '/var/www/httpd-cert/' . $v['owner'] . '/' . $v['name'];
 					$command = 'openssl x509 -in ' . $certPath . '.crt -text -noout';
 					$res = [];
-					exec($command, $res);
+					execShellCommand($command, $res);
 					if (str_contains(implode("\n", $res), '4096 bit')) {
 						$certDHParam = 4096;
 					}
@@ -203,9 +204,11 @@ abstract class BitrixPushServerAbstract extends AddonAbstract
 			addJob("ammina.bitrix.install.pushserver", []);
 		} else {
 			@unlink($this->rtcServerConfigFileName);
-			@exec("/etc/init.d/nginx restart");
-			@exec("service push-server-multi stop");
-			@exec("systemctl disable push-server.service");
+			execShellCommand([
+				'/etc/init.d/nginx restart',
+				'service push-server-multi stop',
+				'systemctl disable push-server.service'
+			]);
 		}
 	}
 

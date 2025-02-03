@@ -27,9 +27,9 @@ abstract class InstallerAbstract
 	public function matchOptions(): void
 	{
 		$command = "free | awk '/Mem/{print $2}'";
-		$this->memorySize = (int)exec($command) * 1024;
+		$this->memorySize = (int)execShellCommand($command) * 1024;
 		$command = "grep 'model name' -c /proc/cpuinfo";
-		$this->cpuCore = (int)exec($command);
+		$this->cpuCore = (int)execShellCommand($command);
 		$this->matchOptionsOpcache();
 		$this->matchOptionsByMemory();
 	}
@@ -1233,9 +1233,10 @@ abstract class InstallerAbstract
 		$this->setTaskComplete('amminaisp_cron');
 	}
 
-	public function upgradeSystem():void{
-		exec('apt update > /dev/null 2>&1');
-		exec('apt -y upgrade > /dev/null 2>&1');
-		exec('apt -y autoremove > /dev/null 2>&1');
+	public function upgradeSystem(): void
+	{
+		system('apt update');
+		system('apt -y upgrade');
+		system('apt -y autoremove');
 	}
 }

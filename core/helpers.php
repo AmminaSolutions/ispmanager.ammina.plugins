@@ -42,3 +42,8 @@ function findFile(string $path): ?string
 {
 	return Utils::findFile($path);
 }
+
+function execShellCommand(string|array $command, &$output = null, &$result_code = null, ?string $scope = null): false|string
+{
+	return Utils::execShellCommand($command, $output, $result_code, $scope);
+}

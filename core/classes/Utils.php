@@ -166,7 +166,44 @@ class Utils
 
 	public static function getUserHomeDir(string $user): ?string
 	{
-		$result = exec("getent passwd {$user} | cut -d: -f6");
+		$result = execShellCommand("getent passwd {$user} | cut -d: -f6");
 		return (empty($result) ? null : $result);
+	}
+
+	public static function execShellCommand(string|array $command, &$output = null, &$result_code = null, ?string $scope = null): false|string
+	{
+		if (is_null($scope)) {
+			if (defined('SHELL_SCOPE')) {
+				$scope = SHELL_SCOPE;
+			} else {
+				$scope = 'panel';
+			}
+		}
+		if (!is_array($command)) {
+			$command = [$command];
+		}
+		$path = '';
+		if (file_exists($_SERVER['DOCUMENT_ROOT'] . '/.local/shell_path')) {
+			$path = file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/.local/shell_path');
+		}
+		if (!str_contains('/usr/local/sbin', $path) || !str_contains('/usr/local/bin', $path)) {
+			$path = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
+		}
+
+		$script = [
+			'#!/bin/sh',
+			'',
+			'export PATH="' . $path . '"',
+			'',
+			...$command,
+			'',
+			'exit $?',
+			'',
+		];
+		$fileName = $_SERVER['DOCUMENT_ROOT'] . '/.local/.tmp.' . $scope . '.sh';
+		file_put_contents($fileName, implode("\n", $script));
+		$result = exec('sh ' . $fileName, $output, $result_code);
+		@unlink($fileName);
+		return $result;
 	}
 }

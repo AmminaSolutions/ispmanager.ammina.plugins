@@ -3,6 +3,7 @@
 namespace AmminaISP\Core\Addons;
 
 use function AmminaISP\Core\addJob;
+use function AmminaISP\Core\execShellCommand;
 use function AmminaISP\Core\isOn;
 
 abstract class MemcachedAbstract extends AddonAbstract
@@ -53,7 +54,7 @@ abstract class MemcachedAbstract extends AddonAbstract
 
 	public function saveForm(): void
 	{
-		@exec("service memcached stop");
+		@execShellCommand("service memcached stop");
 		$this->fillIniFromParams();
 		$this->saveIni();
 		$this->fillDataAppendFromIni();
@@ -74,7 +75,7 @@ abstract class MemcachedAbstract extends AddonAbstract
 			file_put_contents($this->redisOptionsFile, $template);
 			$this->checkMonitoring();
 			$this->checkSystemSettings();
-			@exec("service memcached start");
+			@execShellCommand("service memcached start");
 		}
 	}
 

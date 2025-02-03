@@ -7,6 +7,7 @@ use AmminaISP\Core\ISPManager;
 use AmminaISP\Core\Utils;
 use function AmminaISP\Core\addJob;
 use function AmminaISP\Core\checkDirPath as checkDirPathAlias;
+use function AmminaISP\Core\execShellCommand;
 
 /**
  * Cron операции
@@ -34,20 +35,26 @@ abstract class CronAbstract
 
 	public function run(): void
 	{
+		if (!$this->checkPid()) {
+			return;
+		}
 		if ($this->checkUpdate()) {
+			$this->deletePid();
 			return;
 		}
 		FilesSynchronizer::getInstance()->clearRules()->setDefaultRules()->run();
 		$this->checkDeletedDomains();
 		$this->runCycle();
-
-		while (true) {
+		$i = 5;
+		while ($i > 0) {
 			$this->runCycle();
 			if ((int)date('s') >= 50) {
 				break;
 			}
 			sleep(10);
+			$i--;
 		}
+		$this->deletePid();
 	}
 
 	protected function runCycle(): void
@@ -55,6 +62,28 @@ abstract class CronAbstract
 		$this->checkWebConfigApache();
 		$this->checkWebConfigNginx();
 		$this->checkCronJobs();
+	}
+
+	protected function checkPid(): bool
+	{
+		if (file_exists($_SERVER['DOCUMENT_ROOT'] . '/.local/cron.pid')) {
+			$pid = file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/.local/cron.pid');
+			$data = [];
+			execShellCommand("ps -p " . $pid, $data);
+			foreach ($data as $line) {
+				$line = trim($line);
+				if (str_contains($line, $pid)) {
+					return false;
+				}
+			}
+		}
+		file_put_contents($_SERVER['DOCUMENT_ROOT'] . '/.local/cron.pid', getmypid());
+		return true;
+	}
+
+	protected function deletePid(): void
+	{
+		@unlink($_SERVER['DOCUMENT_ROOT'] . '/.local/cron.pid');
 	}
 
 	/**
@@ -142,7 +171,7 @@ abstract class CronAbstract
 				@unlink("{$home}/bin/.use.{$domain}");
 			}
 			if (file_exists("{$home}/bin/{$domain}")) {
-				@exec("rm -Rf {$home}/bin/{$domain}");
+				@execShellCommand("rm -Rf {$home}/bin/{$domain}");
 			}
 			if (file_exists("{$home}/.bashrc")) {
 				$content = explode("\n", file_get_contents("{$home}/.bashrc"));
@@ -230,14 +259,16 @@ abstract class CronAbstract
 			$filesSynchronizer->addRule('skeleton/bitrix', $docRoot);
 			$filesSynchronizer->run();
 			$filesSynchronizer->setDefaultRules();
-			exec("chown -R " . $option['owner'] . ":" . $option['owner'] . " " . $docRoot);
-			exec("find " . $docRoot . " -type d -exec chmod 0755 '{}' \;");
-			exec("find " . $docRoot . " -type f -exec chmod 0644 '{}' \;");
+			execShellCommand([
+				"chown -R " . $option['owner'] . ":" . $option['owner'] . " " . $docRoot,
+				"find " . $docRoot . " -type d -exec chmod 0755 '{}' \;",
+				"find " . $docRoot . " -type f -exec chmod 0644 '{}' \;",
+			]);
 
 			$tmpDir = Utils::getUserHomeDir($option['owner']) . '/tmp/' . $option['site'];
 			if (!file_exists($tmpDir)) {
 				mkdir($tmpDir, 0755, true);
-				exec("chown -R " . $option['owner'] . ":" . $option['owner'] . " " . $tmpDir);
+				execShellCommand("chown -R " . $option['owner'] . ":" . $option['owner'] . " " . $tmpDir);
 			}
 			if (file_exists($docRoot . "/bitrix/php_interface/dbconn.php")) {
 				$strFileContent = trim(file_get_contents($docRoot . "/bitrix/php_interface/dbconn.php"));
@@ -487,7 +518,7 @@ abstract class CronAbstract
 		chown("{$docroot}/bitrix/php_interface/tmp.ammina.cron.events.php", $option['owner']);
 
 		$command = "sudo -u {$option['owner']} {$phpCommand} -f {$docroot}/bitrix/php_interface/tmp.ammina.cron.events.php";
-		@exec($command);
+		@execShellCommand($command);
 		@unlink("{$docroot}/bitrix/php_interface/tmp.ammina.cron.events.php");
 		return true;
 	}
@@ -601,10 +632,12 @@ abstract class CronAbstract
 		$fileNameSetup = "{$runDir}/composer-setup.php";
 		$fileNamePhar = "{$runDir}/composer.phar";
 		$fileNameComposer = "{$runDir}/composer";
-		exec("sudo -u {$option['owner']} wget -o /dev/null -O {$fileNameSig} https://composer.github.io/installer.sig");
-		exec("sudo -u {$option['owner']} wget -o /dev/null -O {$fileNameSetup} https://getcomposer.org/installer");
+		execShellCommand([
+			"sudo -u {$option['owner']} wget -o /dev/null -O {$fileNameSig} https://composer.github.io/installer.sig",
+			"sudo -u {$option['owner']} wget -o /dev/null -O {$fileNameSetup} https://getcomposer.org/installer",
+		]);
 		if (file_exists($fileNameSetup) && file_exists($fileNameSig) && hash_file('sha384', $fileNameSetup) == trim(file_get_contents($fileNameSig))) {
-			exec("su - {$option['owner']} -c 'cd {$runDir} && {$phpCommand} {$fileNameSetup} --quiet'");
+			execShellCommand("su - {$option['owner']} -c 'cd {$runDir} && {$phpCommand} {$fileNameSetup} --quiet'");
 			unlink($fileNameSetup);
 			unlink($fileNameSig);
 			if (file_exists($fileNamePhar)) {
@@ -643,8 +676,10 @@ abstract class CronAbstract
 		$filePath = "{$homeDir}/bin/{$siteName}/php";
 		checkDirPathAlias($filePath);
 		file_put_contents($filePath, implode("\n", $fileContent));
-		exec("chown -R {$owner}:{$owner} {$homeDir}/bin/");
-		exec("chmod 0744 {$filePath}");
+		execShellCommand([
+			"chown -R {$owner}:{$owner} {$homeDir}/bin/",
+			"chmod 0744 {$filePath}",
+		]);
 	}
 
 	protected function jobAmminaBitrixCommands(array $option): bool
@@ -671,8 +706,10 @@ abstract class CronAbstract
 			$content[] = $aliasCommand;
 			$content[] = '';
 			file_put_contents($bashRcFile, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$bashRcFile}");
-			exec("chmod 0644 {$bashRcFile}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$bashRcFile}",
+				"chmod 0644 {$bashRcFile}",
+			]);
 		}
 		$useSiteDefault = "{$homeDir}/bin/use.default";
 		if (!file_exists($useSiteDefault)) {
@@ -682,8 +719,10 @@ abstract class CronAbstract
 				'source $HOME/bin/.use.' . $siteName,
 			];
 			file_put_contents($useSiteDefault, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$useSiteDefault}");
-			exec("chmod 0744 {$useSiteDefault}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$useSiteDefault}",
+				"chmod 0744 {$useSiteDefault}",
+			]);
 		}
 
 		$useSitePaths = "{$homeDir}/bin/.use.{$siteName}";
@@ -697,8 +736,10 @@ abstract class CronAbstract
 				'',
 			];
 			file_put_contents($useSitePaths, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
-			exec("chmod 0744 {$useSitePaths}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$useSitePaths}",
+				"chmod 0744 {$useSitePaths}",
+			]);
 		}
 
 		$useSitePaths = "{$homeDir}/bin/.run.use.{$siteName}";
@@ -713,8 +754,10 @@ abstract class CronAbstract
 				'source $HOME/bin/use.default',
 			];
 			file_put_contents($useSitePaths, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
-			exec("chmod 0744 {$useSitePaths}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$useSitePaths}",
+				"chmod 0744 {$useSitePaths}",
+			]);
 		}
 
 		return true;
@@ -776,13 +819,14 @@ abstract class CronAbstract
 			->run();
 		$fileSync->clearRules()->setDefaultRules();
 
-		sleep(20);
-		@exec("/etc/init.d/nginx restart");
-		@exec("systemctl daemon-reload");
-		@exec("systemctl enable push-server.service");
-		@exec("/etc/init.d/push-server-multi reset");
-		@exec("service push-server-multi start");
-
+		sleep(10);
+		execShellCommand([
+			"/etc/init.d/nginx restart",
+			"systemctl daemon-reload",
+			"systemctl enable push-server.service",
+			"/etc/init.d/push-server-multi reset",
+			"service push-server-multi start",
+		]);
 		return true;
 	}
 
@@ -819,7 +863,7 @@ abstract class CronAbstract
 			}
 		}
 		if ($update) {
-			@exec('sh ' . $_SERVER['DOCUMENT_ROOT'] . '/update.sh > /dev/null 2>&1');
+			execShellCommand('. ' . $_SERVER['DOCUMENT_ROOT'] . '/update.sh > /dev/null 2>&1');
 			return true;
 		}
 		return false;
@@ -849,8 +893,10 @@ abstract class CronAbstract
 			$content[] = $aliasCommand;
 			$content[] = '';
 			file_put_contents($bashRcFile, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$bashRcFile}");
-			exec("chmod 0644 {$bashRcFile}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$bashRcFile}",
+				"chmod 0644 {$bashRcFile}",
+			]);
 		}
 		$useSiteDefault = "{$homeDir}/bin/use.default";
 		if (!file_exists($useSiteDefault)) {
@@ -860,8 +906,10 @@ abstract class CronAbstract
 				'source $HOME/bin/.use.' . $siteName,
 			];
 			file_put_contents($useSiteDefault, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$useSiteDefault}");
-			exec("chmod 0744 {$useSiteDefault}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$useSiteDefault}",
+				"chmod 0744 {$useSiteDefault}",
+			]);
 		}
 
 		$useSitePaths = "{$homeDir}/bin/.use.{$siteName}";
@@ -901,8 +949,10 @@ abstract class CronAbstract
 				'',
 			];
 			file_put_contents($useSitePaths, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
-			exec("chmod 0744 {$useSitePaths}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$useSitePaths}",
+				"chmod 0744 {$useSitePaths}",
+			]);
 		}
 
 		$useSitePaths = "{$homeDir}/bin/.run.use.{$siteName}";
@@ -917,8 +967,10 @@ abstract class CronAbstract
 				'source $HOME/bin/use.default',
 			];
 			file_put_contents($useSitePaths, implode("\n", $content));
-			exec("chown {$option['owner']}:{$option['owner']} {$useSitePaths}");
-			exec("chmod 0744 {$useSitePaths}");
+			execShellCommand([
+				"chown {$option['owner']}:{$option['owner']} {$useSitePaths}",
+				"chmod 0744 {$useSitePaths}",
+			]);
 		}
 		return true;
 	}

@@ -49,7 +49,7 @@ class ISPManager
 			}
 		}
 		$strResult = [];
-		exec($strCommand, $strResult);
+		execShellCommand($strCommand, $strResult);
 		return json_decode(implode("\n", $strResult), true);
 	}
 

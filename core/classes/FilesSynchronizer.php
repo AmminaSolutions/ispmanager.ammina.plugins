@@ -201,7 +201,7 @@ class FilesSynchronizer
 			if ($showMessages) {
 				Console::notice("Выполняем команду: {$command}");
 			}
-			@exec($command);
+			@execShellCommand($command);
 		}
 	}
 }
