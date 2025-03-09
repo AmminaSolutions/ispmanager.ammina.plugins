@@ -464,7 +464,7 @@ abstract class CronAbstract
 		}
 		$siteInfo = ISPManager::getInstance()->getSiteInfo($option['site']);
 		$siteName = Utils::idn_to_ascii($option['site']);
-		$binPath = "/var/www/{$option['owner']}/data/php-bin-{$siteInfo['php_version']}";
+		$binPath = $this->getBinPath($option['owner'], $siteInfo);
 		$phpCommand = "/opt/php{$siteInfo['php_version']}/bin/php -c {$binPath}/php.{$siteName}.ini";
 		$file = "{$docroot}/bitrix/php_interface/ammina.cron.events.php";
 		$command = "{$phpCommand} -f {$file}";
@@ -660,12 +660,17 @@ abstract class CronAbstract
 		return true;
 	}
 
+	protected function getBinPath(string $owner, array $siteInfo): string
+	{
+		return "/var/www/{$owner}/data/php-bin-isp-php{$siteInfo['php_version']}";
+	}
+
 	protected function checkPhpRunCommand(string $site, string $owner): void
 	{
 		$homeDir = Utils::getUserHomeDir($owner);
 		$siteInfo = ISPManager::getInstance()->getSiteInfo($site);
 		$siteName = Utils::idn_to_ascii($site);
-		$binPath = "/var/www/{$owner}/data/php-bin-{$siteInfo['php_version']}";
+		$binPath = $this->getBinPath($owner, $siteInfo);
 		$phpCommand = "/opt/php{$siteInfo['php_version']}/bin/php -c {$binPath}/php.{$siteName}.ini";
 		$fileContent = [
 			"#!/bin/bash",
