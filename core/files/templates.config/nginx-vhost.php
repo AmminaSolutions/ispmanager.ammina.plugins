@@ -17,7 +17,7 @@
 <? if ($this->param('|NV|SSL') === 'on') { ?>
 	server {
 	server_name <?= $this->param('|NV|NAME') ?> <?= $this->param('|NV|ALIASES') ?>;
-	listen <?= $this->param('|NV|NGINX_SSL_LISTEN_ON') ?> <?= $this->param('|NV|LISTEN_SSL_FLAGS') ?>;
+	listen <?= $this->param('|NV|NGINX_SSL_LISTEN_ON') ?> <? //$this->param('|NV|LISTEN_SSL_FLAGS') ?>;
 	<?= $this->includePart('nginx/ssl.php'); ?>
 	<?= $this->includePart('nginx/main.php'); ?>
 	}
