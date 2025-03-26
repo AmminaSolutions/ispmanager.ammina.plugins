@@ -40,6 +40,8 @@ detect_os() {
 	elif [ -n "$osid_ubuntu" ]; then
 		if [ "$osversion" = "22.04" ]; then
 			useos="ubuntu2204"
+		elif [ "$osversion" = "24.04" ]; then
+			useos="ubuntu2404"
 		else
 			echo "${COLOR_RED}Ошибка:${COLOR_NORMAL} Неизвестная операционная система: $osid, версия: $osversion"
 			exit 1
@@ -56,6 +58,8 @@ make_osdir() {
     	OSDIR="$ROOT/debian12"
     elif [ $useos = "ubuntu2204" ]; then
     	OSDIR="$ROOT/ubuntu2204"
+    elif [ $useos = "ubuntu2404" ]; then
+    	OSDIR="$ROOT/ubuntu2404"
     fi
     if [ -f "/opt/ispmanager.root" ]; then
 		test=`cat /opt/ispmanager.root`
