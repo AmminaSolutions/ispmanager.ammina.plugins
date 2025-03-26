@@ -169,6 +169,11 @@ return [
 				'mod_apache' => false,
 				'fpm' => true,
 			],
+			'84' => [
+				'install' => true,
+				'mod_apache' => false,
+				'fpm' => true,
+			],
 		],
 	],
 	'modules' => [
@@ -243,6 +248,7 @@ return [
 		'81' => [],
 		'82' => [],
 		'83' => [],
+		'84' => [],
 	],
 	'php_extensions' => [
 		'all' => [
@@ -350,6 +356,7 @@ return [
 		'81' => [],
 		'82' => [],
 		'83' => [],
+		'84' => [],
 	],
 	'php-path' => [
 		'52' => '/opt/php52',
@@ -366,6 +373,7 @@ return [
 		'81' => '/opt/php81',
 		'82' => '/opt/php82',
 		'83' => '/opt/php83',
+		'84' => '/opt/php84',
 	],
 	'php_settings_show_user' => [
 		'all' => [
@@ -483,6 +491,9 @@ return [
 			'opcache.jit_buffer_size' => '512M',
 		],
 		'83' => [
+			'opcache.jit_buffer_size' => '512M',
+		],
+		'84' => [
 			'opcache.jit_buffer_size' => '512M',
 		],
 	],

@@ -14,6 +14,9 @@ abstract class NginxConfigAbstract extends WebConfigAbstract
 
 	public function makeConfig(): void
 	{
+		if (strlen(trim($this->webdomainInfo['owner'])) <= 0 || strlen(trim($this->webdomainInfo['name'])) <= 0) {
+			return;
+		}
 		$resultFileName = "{$this->resultDir}/{$this->webdomainInfo['owner']}/{$this->webdomainInfo['name']}.conf";
 		$content = TemplateGenerator::getInstance()->run('nginx-vhost.php', $this->webdomainInfo);
 		if ($this->updateConfig($resultFileName, $content)) {
