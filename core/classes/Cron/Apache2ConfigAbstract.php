@@ -14,7 +14,7 @@ abstract class Apache2ConfigAbstract extends WebConfigAbstract
 
 	public function makeConfig(): void
 	{
-		if (strlen(trim($this->webdomainInfo['owner'])) <= 0 || strlen(trim($this->webdomainInfo['name'])) <= 0) {
+		if (strlen(trim($this->webdomainInfo['owner'])) <= 0 || strlen(trim($this->webdomainInfo['name'])) <= 0 || strlen($this->webdomainInfo['__']['AV']['LISTEN_ON'] ?? '') <= 0) {
 			return;
 		}
 		$resultFileName = "{$this->resultDir}/{$this->webdomainInfo['owner']}/{$this->webdomainInfo['name']}.conf";
